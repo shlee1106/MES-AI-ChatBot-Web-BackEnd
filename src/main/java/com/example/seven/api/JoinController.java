@@ -1,7 +1,6 @@
 package com.example.seven.api;
 
-
-import com.example.seven.domain.user.dto.UserRequestDTO;
+import com.example.seven.domain.user.dto.JoinRequestDTO; // [수정] DTO 변경
 import com.example.seven.domain.user.service.UserService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,8 +18,8 @@ public class JoinController {
     }
 
     @PostMapping("/join")
-    public String join(@RequestBody UserRequestDTO dto) {
+    public String join(@RequestBody JoinRequestDTO dto) { // [수정] 매개변수 타입 변경
         userService.join(dto);
-        return "ok"; 
+        return "ok";
     }
 }

@@ -10,16 +10,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 
 @Configuration
 public class SecurityConfig {
@@ -28,17 +25,15 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler;
     private final JWTUtil jwtUtil;
 
-
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jWTUtil) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jwtUtil) {
         this.authenticationConfiguration = authenticationConfiguration;
-        this.jwtUtil = jWTUtil;
+        this.jwtUtil = jwtUtil;
         this.loginSuccessHandler = loginSuccessHandler;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration
-    ) {
+    // [수정] throws Exception 추가
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
@@ -51,10 +46,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://localhost:3000"); // React/Next.js 포트 허용
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);
+
+        // [추가] 프론트엔드가 응답 헤더의 토큰을 읽을 수 있도록 허용
+        config.addExposedHeader("Authorization");
+        config.addExposedHeader("Refresh-Token");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -63,43 +62,32 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-
-        // 수 많은 필터 중 CSRF 필터를 disable 시킴
-        http
-                .csrf(csrf -> csrf.disable());
+    // [수정] throws Exception 추가
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
-
-        // 기본 로그인
-        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(login -> login.disable());
 
-        // 경로별 인가
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/join").permitAll()
                         .requestMatchers("/api/v1/jwt/refresh").permitAll()
-                        .requestMatchers("/api/v1/").permitAll()
+                        .requestMatchers("/api/v1/login").permitAll()
+                        .requestMatchers("/error").permitAll() //
                         .requestMatchers("/api/v1/user").hasRole("USER")
                         .anyRequest().hasRole("ADMIN")
                 );
 
-        // 커스텀 필터 추가
+        // [수정] JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
         http
-                .addFilterAfter(new JWTFilter(jwtUtil), SecurityContextHolderFilter.class);
+                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
 
-        http
-                .addFilterBefore(new LoginFilter(authenticationManager(authenticationConfiguration),loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
-
-        // 세션 설정 STATELESS
         http
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-
-
 
         return http.build();
     }

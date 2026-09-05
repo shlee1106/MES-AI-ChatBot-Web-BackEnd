@@ -3,18 +3,18 @@ package com.example.seven.domain.jwt.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
 
-@Entity
+
 @Getter
 @Setter
+@RedisHash(value = "refreshToken", timeToLive = 2592000)
 public class RefreshEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     private String username;
 
-    @Column(name = "refresh", nullable = false, length = 512)
+    @Id
     private String refresh;
 }

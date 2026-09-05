@@ -10,14 +10,19 @@ spring:
       ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
+  data:
+    redis:
+      # host: host.docker.internal
+      host: localhost
+      port: 6379
+
 # jwt는 spring과 같은 라인(제일 왼쪽)에 있어야 합니다.
 jwt:
   secret: hello-my-name-is-dev-yummi-im-korean-web-dev-and-youtuber
-  access-token-expire-time: 3600000
-  refresh-token-expire-time: 1209600000
+  access-token-expire-time: 600000
+  refresh-token-expire-time: 2592000000

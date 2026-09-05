@@ -33,7 +33,7 @@ public class RefreshService {
         }
 
         // 화이트 리스트 확인
-        boolean exists = refreshRepository.existsByRefresh(refreshToken);
+        boolean exists = refreshRepository.existsById(refreshToken);
 
         if(!exists) {
             throw new IllegalArgumentException("로그아웃되었거나 만료된 Refresh Token입니다.");

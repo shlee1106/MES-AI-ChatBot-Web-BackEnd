@@ -7,5 +7,9 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
-    Optional<UserEntity> findByUsername(String username);
+    // 회사번호와 사원번호로 사용자 찾기 (로그인 시 사용)
+    Optional<UserEntity> findByCompanyIdAndEmployeeId(Long companyId, Long employeeId);
+
+    // 중복 가입 방지 체크용
+    boolean existsByCompanyIdAndEmployeeId(Long companyId, Long employeeId);
 }

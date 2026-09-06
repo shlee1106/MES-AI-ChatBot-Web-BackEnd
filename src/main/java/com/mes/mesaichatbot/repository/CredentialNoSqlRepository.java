@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.repository;
 
 import com.mes.mesaichatbot.domain.CredentialNoSql;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
-public interface CredentialNoSqlRepository extends JpaRepository<CredentialNoSql, String> {
+public interface CredentialNoSqlRepository extends CrudRepository<CredentialNoSql, String> {
 }

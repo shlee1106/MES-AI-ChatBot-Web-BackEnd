@@ -6,6 +6,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * original_file 테이블.
+ */
 @Entity
 @Table(name = "original_file")
 @Getter

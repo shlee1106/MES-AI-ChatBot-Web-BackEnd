@@ -9,9 +9,9 @@ spring:
       hibernate:
         auto_qu
   ai:
-    #    vectorstore:
-    #      mongodb:
-    #        initialize-schema: true
+    vectorstore:
+      mongodb:
+        initialize-schema: true
     model:
       embedding: ollama
       chat: openai
@@ -22,11 +22,15 @@ spring:
     name: MESAIChatBotWebBackEnd
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/mes
-  #  mongodb:
-  #    database: springrag
-  #    authentication-database: admin
-  #    host: localhost
-  #    port: 27017
+  mongodb:
+    database: springrag
+    authentication-database: admin
+    host: localhost
+    port: 27017
+  data:
+    redis:
+      host: localhost
+      port: 6379
   servlet:
     multipart:
       enabled: true

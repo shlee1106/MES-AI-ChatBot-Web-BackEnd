@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.repository;
 
 import com.mes.mesaichatbot.domain.ChatHistoryNoSql;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
-public interface ChatHistoryNoSqlRepository extends JpaRepository<ChatHistoryNoSql, String> {
+public interface ChatHistoryNoSqlRepository extends CrudRepository<ChatHistoryNoSql, String> {
 }

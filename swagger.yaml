@@ -1,0 +1,902 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: MES AI ChatBot API
+  description: MES 데이터 기반 AI 챗봇 웹 서비스 API 명세서입니다.
+paths:
+  /auth/login:
+    post:
+      summary: 사원 로그인
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-stoplight:
+                      id: knw4bljxmr5yd
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 27ee3l5ymwvfo
+                  companyId:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/CredentialsNosql'
+              examples:
+                Example 1:
+                  value:
+                    status: OK
+                    message: 로그인에 성공하셨습니다.
+                    companyId: 814324
+                    data:
+                      id: '20260526'
+                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
+                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG8yZSIsImFkbWluIjp0cnVlLCJpYXQiOjE3ODE1ODcwODV9.9uPM5fogFI7QGLorKMaCpn0mFCARGTZ-1j2oCSv-QGQ
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-stoplight:
+                      id: x8d30rrkvo0mz
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: lbv7m4hfwqq8d
+              examples:
+                Example 1:
+                  value:
+                    status: Unauthorized
+                    message: 아이디 또는 비밀번호가 틀렸습니다.
+      operationId: post-api-v1-auth-login
+      description: "설명: 로그인 (사원번호/비밀번호 인증)\r\n\r\nRequest Body: CredentialsNosql (또는 로그인용 ID/PW 객체)\r\n\r\nResponse: JWT 토큰 및 로그인 유저 정보"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: integer
+                loginData:
+                  $ref: '#/components/schemas/login'
+            examples:
+              Example 1:
+                value:
+                  companyId: 814324
+                  loginData:
+                    id: '20260526'
+                    passwd: passwd1234!
+        description: ''
+    parameters: []
+  /users/me:
+    get:
+      summary: 내 정보 조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMember'
+              examples:
+                Example 1:
+                  value:
+                    employeeId: 20260041
+                    userName: 홍길동
+                    companyEmail: gildong.hong@mes-factory.com
+                    roleCode: ROLE_MANAGER
+                    userStatusCode: STATUS_ACTIVE
+                    authCode: 3
+                    authExpiredAt: '2026-12-31T23:59:59Z'
+                    createdAt: '2026-06-09T18:00:00Z'
+      operationId: get-api-v1-users-me
+      description: "설명: 현재 로그인한 내 정보 조회\r\n\r\nResponse: UserMember"
+      requestBody:
+        content: {}
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Authorization
+          description: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
+      security: []
+    parameters:
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+        required: true
+  /chat/sessions:
+    get:
+      summary: 이전 대화방 목록 조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatSession'
+              examples:
+                Example 1:
+                  value:
+                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
+                      companyId: 814324
+                      employeeId: 20260526
+                      sessionTitle: 오늘의 매출량
+                      createdAt: '2025-08-24T14:15:22Z'
+                Example 2:
+                  value:
+                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
+                      employeeId: 20260526
+                      companyId: 814324
+                      sessionTitle: 오늘의 매출량
+                      createdAt: '2025-08-24T14:15:22Z'
+                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
+                      companyId: 814324
+                      employeeId: 20260526
+                      sessionTitle: 오늘의 매출량
+                      createdAt: '2025-08-24T14:15:22Z'
+        '401':
+          description: Unauthorized
+          content: {}
+      operationId: get-api-v1-chat-sessions
+      description: "설명: 현재 로그인한 사용자의 이전 대화방(세션) 리스트 조회\r\n\r\nResponse: Array [ ChatSession ]"
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Authorization
+          description: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
+    parameters:
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+        required: true
+  /chat/sessionrooms:
+    post:
+      summary: 새 대화방 생성
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+              examples:
+                Example 1:
+                  value:
+                    sessionId: c92124a1-1f46-4416-9130-110cf9cc7d6c
+                    companyId: 814324
+                    employeeId: 20260526
+                    sessionTitle: 금일 제조 공장 상황
+                    createdAt: '2026-06-09T19:45:00Z'
+      operationId: post-api-v1-chat-sessionrooms
+      description: "설명: 새로운 대화방(세션) 생성 (예: 새 대화 시작하기 버튼 클릭 시)\r\n\r\nRequest Body: sessionTitle 등이 포함된 객체\r\n\r\nResponse: 생성된 ChatSession"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewChatSession'
+            examples:
+              Example 1:
+                value:
+                  title: 금일 제조 공장 상황
+    parameters:
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+        required: true
+  '/chat/sessions/{sessionId}/histories':
+    parameters:
+      - schema:
+          type: string
+        name: sessionId
+        in: path
+        required: true
+        description: UUID
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+        required: true
+    get:
+      summary: 대화 내역조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatHistoriesNosql'
+              examples:
+                Example 1:
+                  value:
+                    - id: 01H2X6Z4NB92D5X8C1V2B3N4M5
+                      chatroomId: b96924c1-8q46-5496-2167-222ac9ff7d6c
+                      message: 이번 달 MES 가동률 데이터 엑셀 파일에서 2공장 불량률 좀 분석해줘.
+                      recordedAt: '2026-07-07T21:00:15Z'
+                      role: user
+                    - id: 01H2X6Z4NB92D5X8C1V2B3N4M5
+                      chatroomId: b96924c1-8q46-5496-2167-222ac9ff7d6c
+                      message: '업로드하신 파일 분석 결과, 2공장의 이번 달 평균 불량률은 0.23%입니다.'
+                      recordedAt: '2026-07-07T21:00:18Z'
+                      role: ai
+      operationId: get-api-v1-chat-sessions-sessionId-histories
+      description: "설명: 특정 대화방의 과거 대화 내역 전체 조회 (방 클릭 시 과거 내역 불러오기)\r\n\r\nResponse: Array [ ChatHistoriesNosql ]"
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: sessionId
+          description: UUID
+  '/chat/sessions/{sessionId}/ask':
+    parameters:
+      - schema:
+          type: string
+        name: sessionId
+        in: path
+        required: true
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        description: JWT
+        required: true
+    post:
+      summary: 챗봇에게 질문
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoriesNosql'
+              examples:
+                Example 1:
+                  value:
+                    id: 01H2X6Z4NB92D5X8C1V2B3N4M5
+                    chatroomId: c92124a1-1f46-4416-9130-110cf9cc7d6c
+                    message: '[Gemini 1.5 Pro 분석] 현재 A라인의 종합 설비 효율(OEE)은 85%이며, B라인은 92%입니다.'
+                    recordedAt: '2026-06-09T18:35:00Z'
+                    role: assistant
+      operationId: post-api-v1-chat-sessions-sessionId-messages
+      description: "설명: 챗봇에게 질문 던지기 (실제 대화 진행)\r\n\r\nRequest Body: userQuestion (사용자 질문 내용)\r\n\r\nResponse: ChatHistoriesNosql (AI의 답변 chatbotResponse가 포함된 결과 반환)"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  x-stoplight:
+                    id: l7mitvh7a47sv
+            examples:
+              Example 1:
+                value:
+                  message: 오늘의 불량품 현황은 어때?
+  /files/upload:
+    post:
+      summary: 파일 업로드
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileData:
+                    $ref: '#/components/schemas/OriginalFile'
+                  parsedData:
+                    $ref: '#/components/schemas/UploadDataRows(Update)'
+              examples:
+                Example 1:
+                  value:
+                    fileData:
+                      fileId: 78f59a6e-2cde-498c-9ee3-03b3d9ab826c
+                      companyId: 10
+                      employeeId: 20260526
+                      originName: ' A라인_프레스설비_정비가이드북.pdf'
+                      saveFileName: 20260601_A라인_프레스설비_정비가이드북.pdf
+                      fileType: pdf
+                      fileDataPath: /var/www/mes-chatbot/storage/uploads/20260601_78f59a6e_A라인_프레스설비_정비가이드북.pdf
+                      uploadedAt: '2026-06-01T14:15:22Z'
+                    parsedData:
+                      - dataId: 1
+                        companyId: 10
+                        fileId: 78f59a6e-2cde-498c-9ee3-03b3d9ab826c
+                        rowNumber: 1
+                        rowData:
+                          mappings:
+                            emp_name:
+                              excel_column: 성명
+                              value: 이승희
+                            emp_age:
+                              excel_column: 연령
+                              value: 28
+                            oee_rate:
+                              excel_column: A라인설비효율(%)
+                              value: 85.5
+                          meta_info:
+                            total_columns: 3
+                            has_error: false
+                      - dataId: 2
+                        companyId: 10
+                        fileId: 95e28a6q-2aln-150m-0ao7-03b3a1bk108v
+                        rowNumber: 2
+                        rowData:
+                          mappings:
+                            emp_name:
+                              excel_column: 성명
+                              value: 구담욱
+                            emp_age:
+                              excel_column: 연령
+                              value: 32
+                            oee_rate:
+                              excel_column: A라인설비효율(%)
+                              value: 91.2
+                          meta_info:
+                            total_columns: 3
+                            has_error: false
+      operationId: post-api-v1-files-upload
+      description: "설명: 대시보드 분석용 실적/품질 파일 업로드\r\n\r\nResponse: 업로드 완료된 OriginalFile 정보\r\n\r\n*반정규화 진행*"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  x-stoplight:
+                    id: o1lu2z5giwen7
+                  format: binary
+                title:
+                  type: string
+                  x-stoplight:
+                    id: lwq8aaz4rexeu
+            examples:
+              Example 1:
+                value:
+                  file: <example binary data here...>
+                  title: A라인_프레스설비_정비가이드북.pdf
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Authorization
+          description: JWT
+    parameters: []
+  '/companies/{companyId}/column-codes/register':
+    post:
+      summary: 신규 엑셀 매핑 룰 등록
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnCodes(Update)'
+              examples:
+                Example 1:
+                  value:
+                    columnCodeId: 5001
+                    companyId: 10
+                    excelColumnName: A라인설비효율(%)
+                    standardColumnCode: oee_rate
+                    dataType: DOUBLE
+                    createdAt: '2026-07-07T23:10:00Z'
+      operationId: post-companies-companyId-column-codes-register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                excelColumnName:
+                  type: string
+                standardColumnCode:
+                  type: string
+                dataType:
+                  type: string
+            examples:
+              Example 1:
+                value:
+                  excelColumnName: A라인설비효율(%)
+                  standardColumnCode: oee_rate
+                  dataType: DOUBLE
+    parameters:
+      - schema:
+          type: string
+        name: companyId
+        in: path
+        required: true
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        required: true
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+  '/companies/{companyId}/column-codes':
+    parameters:
+      - schema:
+          type: string
+        name: companyId
+        in: path
+        required: true
+      - schema:
+          type: string
+        in: header
+        name: Authorization
+        required: true
+        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+    get:
+      summary: 회사별 엑셀 매핑 룰 목록 조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ColumnCodes(Update)'
+              examples:
+                Example 1:
+                  value:
+                    - columnCodeId: 5001
+                      companyId: 10
+                      excelColumnName: 제품이름
+                      standardColumnCode: COL_PROD_NAME
+                      dataType: string
+                      createdAt: '2026-07-07T23:10:00Z'
+                    - columnCodeId: 5002
+                      companyId: 10
+                      excelColumnName: 맨드 가량
+                      standardColumnCode: COL_PROD_QTY
+                      dataType: integer
+                      createdAt: '2026-07-07T23:10:01Z'
+                    - columnCodeId: 5003
+                      companyId: 10
+                      excelColumnName: 상태
+                      standardColumnCode: COL_EQP_STATUS
+                      dataType: string
+                      createdAt: '2026-07-07T23:10:02Z'
+      operationId: get-companies-companyId-column-codes
+  /mes/production:
+    parameters: []
+    get:
+      summary: 생산 실적 데이터 조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductionPerformance'
+              examples:
+                Example 1:
+                  value: {}
+      operationId: get-api-v1-mes-production
+      description: "설명: 생산 실적 데이터 대시보드 조회 (AI가 분석할 기준 데이터)\r\n\r\nQuery Parameters: date, lineCode 등\r\n\r\nResponse: Array [ ProductionPerformance ]"
+  /mes/quality:
+    get:
+      summary: 품질 실적 데이터 조회
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QualityPerformance'
+              examples:
+                Example 1:
+                  value:
+                    '':
+                      - qualityId: 8004
+                        fileId: 105
+                        inspectDate: '2026-06-09'
+                        lineCode: LINE-A
+                        itemName: 자동차 실린더 블록
+                        totalQty: 15000
+                        defectQty: 150
+                        defectType: '주조 쇼트 95건, 표면 기공 55건'
+                        createAt: '2026-06-09T19:42:00Z'
+                      - qualityId: 8005
+                        fileId: 105
+                        inspectDate: '2026-06-09'
+                        lineCode: LINE-B
+                        itemName: 크랭크 샤프트
+                        totalQty: 10000
+                        defectQty: 90
+                        defectType: 치수 미달 90건
+                        createAt: '2026-06-09T19:43:00Z'
+      operationId: get-api-v1-mes-quality
+      description: "설명: 품질 실적 데이터 대시보드 조회\r\n\r\nQuery Parameters: date, lineCode 등\r\n\r\nResponse: Array [ QualityPerformance ]"
+    parameters: []
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: 'https://virtserver.swaggerhub.com/yju/MES_AI_ChatBot_API/1.0.0'
+components:
+  schemas:
+    UserMember:
+      type: object
+      required:
+        - employeeId
+        - companyId
+        - userName
+        - companyEmail
+        - roleCode
+        - userStatusCode
+      properties:
+        employeeId:
+          type: integer
+          x-stoplight:
+            id: n1hcw3wsp33c7
+        companyId:
+          type: integer
+        userName:
+          type: string
+          x-stoplight:
+            id: vjt8m3jp18d0u
+        companyEmail:
+          type: string
+          x-stoplight:
+            id: kmobom5l0dmnt
+          format: email
+        roleCode:
+          type: string
+          x-stoplight:
+            id: 92hcphdzsoc0o
+        userStatusCode:
+          type: string
+          x-stoplight:
+            id: bajry1qmcli7f
+        authCode:
+          type: integer
+          x-stoplight:
+            id: 9utsbbjl0dtgw
+        authExpiredAt:
+          type: string
+          x-stoplight:
+            id: goig56ouos48e
+          format: date-time
+        createdAt:
+          type: string
+          x-stoplight:
+            id: 7y8si4cyg798c
+          format: date-time
+    ChatSession:
+      title: ChatSession
+      type: object
+      required:
+        - sessionId
+        - employeeId
+        - companyId
+        - sessionTitle
+      properties:
+        sessionId:
+          type: string
+          x-stoplight:
+            id: 8528i6ffqexu6
+        employeeId:
+          type: integer
+          x-stoplight:
+            id: qu7muamljo7ue
+        companyId:
+          type: integer
+        sessionTitle:
+          type: string
+          x-stoplight:
+            id: 6w641pfyrtrj5
+        createdAt:
+          type: string
+          x-stoplight:
+            id: k6gxwg0e0esiv
+          format: date-time
+    NewChatSession:
+      title: ChatSession
+      type: object
+      properties:
+        title:
+          type: string
+    OriginalFile:
+      title: OriginalFile
+      type: object
+      required:
+        - fileId
+        - companyId
+        - employeeId
+        - originName
+        - saveFileName
+        - fileType
+        - fileDataPath
+      properties:
+        fileId:
+          type: string
+          x-stoplight:
+            id: wq8kbg2h8ayt7
+        companyId:
+          type: integer
+        employeeId:
+          type: integer
+          x-stoplight:
+            id: ix6kp5l2hca8o
+        originName:
+          type: string
+          x-stoplight:
+            id: d5dsf3aca2a68
+        saveFileName:
+          type: string
+          x-stoplight:
+            id: sjeg4jbztdr5l
+        fileType:
+          type: string
+          x-stoplight:
+            id: s40r9i87az99z
+        fileDataPath:
+          type: string
+          x-stoplight:
+            id: deg04r6qb3uzt
+          format: binary
+        uploadedAt:
+          type: string
+          x-stoplight:
+            id: 0a2b4mcu0dy2m
+          format: date-time
+    CredentialsNosql:
+      title: CredentialsNosql
+      type: object
+      required:
+        - id
+        - accessToken
+        - refreshToken
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: 1le5dwl1znbnt
+        accessToken:
+          type: string
+          x-stoplight:
+            id: bjrncsy01mby8
+        refreshToken:
+          type: string
+          x-stoplight:
+            id: b87japbg87ps2
+    Companies(Update):
+      title: Companies
+      type: object
+      required:
+        - companyId
+        - company_name
+      properties:
+        companyId:
+          type: integer
+        company_name:
+          type: string
+        createAt:
+          type: string
+          format: date-time
+    ProductionPerformance:
+      title: ProductionPerformance
+      type: object
+      required:
+        - prodId
+        - fileId
+        - workDate
+        - lineCode
+        - itemName
+        - targetQty
+        - goodQty
+      properties:
+        prodId:
+          type: integer
+          x-stoplight:
+            id: pele4zxvtsgf0
+        fileId:
+          type: integer
+          x-stoplight:
+            id: 0k4v8yd74r2gu
+        workDate:
+          type: string
+          x-stoplight:
+            id: rbncdioqlw0gw
+          format: date
+        lineCode:
+          type: string
+          x-stoplight:
+            id: l343vmkk51n2l
+        itemName:
+          type: string
+          x-stoplight:
+            id: g2hlef0nshoot
+        targetQty:
+          type: integer
+          x-stoplight:
+            id: 6c3kog57x4aah
+        goodQty:
+          type: integer
+          x-stoplight:
+            id: jgm9c47akkq4f
+        createdAt:
+          type: string
+          x-stoplight:
+            id: 22bhewcm9q263
+          format: date-time
+      description: ''
+    ChatHistoriesNosql:
+      title: chatHistoriesNosql
+      type: object
+      required:
+        - id
+        - message
+        - role
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: p6fvc8l1ms3g4
+        chatroomId:
+          type: string
+          x-stoplight:
+            id: 86mg8n3lzzhvt
+        message:
+          type: string
+          x-stoplight:
+            id: 8ti1zuwhokr0f
+          description: 오늘 상반기 생산 실적 목표치 달성률을 알려줘.
+        recordedAt:
+          type: string
+          x-stoplight:
+            id: 1a530xy17fjgp
+          format: date-time
+        role:
+          type: string
+          x-stoplight:
+            id: 1zslj5d533v3i
+    ColumnCodes(Update):
+      title: ColumnCodes
+      type: object
+      required:
+        - companyId
+        - excelColumnName
+        - standardColumnCode
+        - dataType
+      properties:
+        columnCodeId:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+        excelColumnName:
+          type: string
+        standardColumnCode:
+          type: string
+        dataType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    UploadDataRows(Update):
+      title: UploadDataDetails
+      type: object
+      required:
+        - companyId
+        - fileId
+        - rowNumber
+        - rowData
+      properties:
+        dataId:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+        fileId:
+          type: integer
+        rowNumber:
+          type: integer
+        rowData:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    QualityPerformance:
+      title: QualityPerformance
+      type: object
+      required:
+        - qualityId
+        - fileId
+        - inspectDate
+        - lineCode
+        - totalQty
+        - defectQty
+      properties:
+        qualityId:
+          type: integer
+          x-stoplight:
+            id: hrto18mfxclko
+        fileId:
+          type: integer
+          x-stoplight:
+            id: zunowhr98iuo5
+        inspectDate:
+          type: string
+          x-stoplight:
+            id: 3ao77zqpy1wdq
+          format: date
+        lineCode:
+          type: string
+          x-stoplight:
+            id: 934ilwd7coujs
+        itemName:
+          type: string
+          x-stoplight:
+            id: gv7rpe7vb7v06
+        totalQty:
+          type: integer
+          x-stoplight:
+            id: 6yi562zx84zrs
+        defectQty:
+          type: integer
+          x-stoplight:
+            id: w0p9ql8rb8uuy
+        defectType:
+          type: string
+          x-stoplight:
+            id: lghn3o71lcvj1
+        createAt:
+          type: string
+          x-stoplight:
+            id: 9umcine8hgtts
+          format: date-time
+    login:
+      title: login
+      type: object
+      required:
+        - id
+        - passwd
+      properties:
+        id:
+          type: string
+        passwd:
+          type: string
+          x-stoplight:
+            id: iojlmnslbuy7o

@@ -21,6 +21,18 @@ spring:
       host: localhost
       port: 6379
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: 발신용계정@gmail.com
+    password: 발급받은앱비밀번호16자리
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # jwt는 spring과 같은 라인(제일 왼쪽)에 있어야 합니다.
 jwt:
   secret: hello-my-name-is-dev-yummi-im-korean-web-dev-and-youtuber

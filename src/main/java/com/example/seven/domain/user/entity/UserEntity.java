@@ -10,15 +10,15 @@ import lombok.Setter;
 @Setter
 public class UserEntity {
 
+
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    @Column(name = "employee_id", nullable = false)
+    private Long employeeId;
 
     @Column(name = "company_id", nullable = false)
     private Long companyId;
 
-    @Column(name = "employee_id", nullable = false)
-    private Long employeeId;
 
     @Column(nullable = false)
     private String password;

@@ -37,14 +37,22 @@ public class XlsxParser implements DocumentParser {
     public List<UploadDataDetailsDto> parse(InputStream inputStream) throws IOException {
         List<UploadDataDetailsDto> data = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
+        DataFormatter dataFormatter = new DataFormatter();
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
-                for (int j = 0; j < sheet.getLastRowNum(); j++) {
-                    Row row = sheet.getRow(j);
+                for (int j = 0; j < sheet.getPhysicalNumberOfRows(); j++) {
+                    if (sheet.getRow(j) == null) {
+                        continue;
+                    }
                     
-                    data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, j, objectMapper.writeValueAsString(row), createdAt));
+                    List<String> cells = new ArrayList<>();
+                    for (Cell cell : sheet.getRow(j)) {
+                        cells.add(dataFormatter.formatCellValue(cell));
+                    }
+
+                    data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, j + 1, objectMapper.writeValueAsString(cells), createdAt));
                 }
             }
 

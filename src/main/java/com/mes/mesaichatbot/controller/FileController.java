@@ -5,9 +5,9 @@ import com.mes.mesaichatbot.domain.OriginalFile;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.core.io.ByteArrayResource;
+import com.mes.mesaichatbot.service.DocumentService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -20,46 +20,61 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController("/files")
 public class FileController {
+
+    /**
+     * 문서 파싱 Service.
+     */
+    private final DocumentService documentService;
+
+    // 자동 주입.
+    public FileController(DocumentService documentService) {
+        this.documentService = documentService;
+    }
+
+
     /**
      * 파일 업로드를 처리합니다.
      *
-     * @param file 업로드된 멀티파트 파일.
+     * @param file 업로드된 {@link MultipartFile} 파일.
      * @return JSON 형태의 FileUploadResponseDto 객체.
      */
     @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) {
+    public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) { // TODO: 인증 시스템 연동 시 required = true로 설정 혹은 지우기.
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
-        Company company = new Company();
-        UserMember employee = new UserMember();
-        try {
-            TikaDocumentReader reader = new TikaDocumentReader(new ByteArrayResource(file.getBytes()));
-            // DB에 삽입할 새 행 생성.
-            OriginalFile originalFile = new OriginalFile();
-            originalFile.setUploadedAt(now);
-            originalFile.setFileId(fileId.toString());
-            originalFile.setOriginName(file.getOriginalFilename());
-            originalFile.setSaveFileName(now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename());
-            originalFile.setFileType(StringUtils.getFilenameExtension(file.getOriginalFilename()));
-            originalFile.setCompanyId(company); // TODO: 인증 시스템 연동 시 회사정보 입력
-            originalFile.setEmployeeId(employee); // TODO:  인증 시스템 연동 시 사원정보 입력
+        Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
+        UserMember employee = new UserMember(); // TODO:  인증 시스템 연동 시 사원정보 입력
+        // DB에 삽입할 새 행 생성.
+        OriginalFile originalFile = new OriginalFile();
+        originalFile.setUploadedAt(now);
+        originalFile.setFileId(fileId.toString());
+        // 파일 이름 대입
+        originalFile.setOriginName(file.getOriginalFilename());
+        // (현재 날짜)_(파일 이름) 대입.
+        originalFile.setSaveFileName(now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename());
+        // 파일 형식 대입.
+        originalFile.setFileType(StringUtils.getFilenameExtension(file.getOriginalFilename()));
+        originalFile.setCompanyId(company); // TODO: 인증 시스템 연동 시 회사정보 입력
+        originalFile.setEmployeeId(employee); // TODO:  인증 시스템 연동 시 사원정보 입력
 
-            List<UploadDataDetailsDto> parsedData = new ArrayList<>();
-            List<Document> document = reader.get();
-            for (int i = 0; i < document.size(); i++) {
-                UploadDataDetailsDto dataDetailsDto = new UploadDataDetailsDto(i, company.getCompanyId(), fileId.toString(), i, document.get(i).getText(), now);
-                parsedData.add(dataDetailsDto);
-            }
-            return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
-        } catch (IOException e) { // 잘못된 파일이 입력되면 Bad Request 반환.
+        // 데이터 파싱 시도.
+        List<UploadDataDetailsDto> parsedData;
+        try {
+            parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(), now);
+        } catch (IOException | NotOfficeXmlFileException e) {
+            // IOException 발생 시 사용자가 잘못된 데이터를 던진 것으로 간주,
+            // Bad Request 반환.
+            log.warn(e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+        // 성공 시 200 반환.
+        return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
     }
 }

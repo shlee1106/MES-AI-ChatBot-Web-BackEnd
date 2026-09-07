@@ -36,9 +36,9 @@ public class DocxParser implements DocumentParser {
 
     @Override
     public List<UploadDataDetailsDto> parse(InputStream inputStream) throws IOException {
-
         try (XWPFDocument document = new XWPFDocument(inputStream)) {
             List<UploadDataDetailsDto> data = new ArrayList<>();
+            ObjectMapper mapper = new ObjectMapper();
 
             List<IBodyElement> element = document.getBodyElements();
             for (int i = 0; i < element.size(); i++) {
@@ -49,7 +49,6 @@ public class DocxParser implements DocumentParser {
                         data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, text, createdAt));
                     }
                 } else if (element.get(i) instanceof XWPFTable table) {
-                    ObjectMapper mapper = new ObjectMapper();
                     data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(table), createdAt));
                 }
                 // OCR: 비용 문제가 우려되어 제거함.

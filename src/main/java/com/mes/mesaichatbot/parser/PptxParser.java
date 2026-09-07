@@ -36,10 +36,10 @@ public class PptxParser implements DocumentParser {
     @Override
     public List<UploadDataDetailsDto> parse(InputStream inputStream) throws IOException {
         List<UploadDataDetailsDto> data = new ArrayList<>();
-        try (XMLSlideShow presentation = new XMLSlideShow(inputStream)) {
+        ObjectMapper mapper = new ObjectMapper();
 
+        try (XMLSlideShow presentation = new XMLSlideShow(inputStream)) {
             for (int i = 0; i < presentation.getSlides().size(); i++) {
-                ObjectMapper mapper = new ObjectMapper();
                 XSLFSlide slide = presentation.getSlides().get(i);
                 data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(slide), createdAt));
             }

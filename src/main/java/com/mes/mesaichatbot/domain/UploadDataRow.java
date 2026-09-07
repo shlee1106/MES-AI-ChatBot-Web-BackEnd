@@ -1,8 +1,7 @@
 package com.mes.mesaichatbot.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -12,7 +11,8 @@ import java.util.Map;
 @Entity
 @Table(name = "upload_data_rows")
 @Getter
-@Setter
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UploadDataRow {
     @Id
     @Column(name = "data_id")

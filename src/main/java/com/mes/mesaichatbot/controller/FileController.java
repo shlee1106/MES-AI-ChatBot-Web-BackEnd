@@ -5,6 +5,8 @@ import com.mes.mesaichatbot.domain.OriginalFile;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
+import com.mes.mesaichatbot.repository.OriginalFileRepository;
+import com.mes.mesaichatbot.repository.UploadDataRowRepository;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,18 +34,19 @@ public class FileController {
      * 문서 파싱 Service.
      */
     private final DocumentService documentService;
+    private final ObjectMapper objectMapper;
 
     // 자동 주입.
-    public FileController(DocumentService documentService) {
+    public FileController(DocumentService documentService, OriginalFileRepository fileRepository, UploadDataRowRepository uploadDataRowRepository, ObjectMapper objectMapper) {
         this.documentService = documentService;
+        this.objectMapper = objectMapper;
     }
-
 
     /**
      * 파일 업로드를 처리합니다.
      *
      * @param file 업로드된 {@link MultipartFile} 파일.
-     * @return JSON 형태의 FileUploadResponseDto 객체.
+     * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
      */
     @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) { // TODO: 인증 시스템 연동 시 required = true로 설정 혹은 지우기.
@@ -50,10 +54,11 @@ public class FileController {
         UUID fileId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
         Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
-        UserMember employee = new UserMember(); // TODO:  인증 시스템 연동 시 사원정보 입력
+        UserMember employee = new UserMember(); // TODO: 인증 시스템 연동 시 사원정보 입력
+
         // DB에 삽입할 새 행 생성.
         OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
-        
+
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;
         try {
@@ -64,6 +69,9 @@ public class FileController {
             log.warn(e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+
+        // TODO: DB에 OriginalFile과 parsedData 저장.
+
         // 성공 시 200 반환.
         return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
     }

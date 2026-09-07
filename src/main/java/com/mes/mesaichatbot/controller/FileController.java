@@ -52,18 +52,8 @@ public class FileController {
         Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
         UserMember employee = new UserMember(); // TODO:  인증 시스템 연동 시 사원정보 입력
         // DB에 삽입할 새 행 생성.
-        OriginalFile originalFile = new OriginalFile();
-        originalFile.setUploadedAt(now);
-        originalFile.setFileId(fileId.toString());
-        // 파일 이름 대입
-        originalFile.setOriginName(file.getOriginalFilename());
-        // (현재 날짜)_(파일 이름) 대입.
-        originalFile.setSaveFileName(now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename());
-        // 파일 형식 대입.
-        originalFile.setFileType(StringUtils.getFilenameExtension(file.getOriginalFilename()));
-        originalFile.setCompanyId(company); // TODO: 인증 시스템 연동 시 회사정보 입력
-        originalFile.setEmployeeId(employee); // TODO:  인증 시스템 연동 시 사원정보 입력
-
+        OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
+        
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;
         try {

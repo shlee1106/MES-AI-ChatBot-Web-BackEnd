@@ -1,10 +1,8 @@
 package com.mes.mesaichatbot.parser;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import org.apache.poi.xslf.usermodel.XMLSlideShow;
-import org.apache.poi.xslf.usermodel.XSLFShape;
-import org.apache.poi.xslf.usermodel.XSLFSlide;
-import org.apache.poi.xslf.usermodel.XSLFTextShape;
+import org.apache.poi.xslf.usermodel.*;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -44,6 +42,8 @@ public class PptxParser implements DocumentParser {
     public List<UploadDataDetailsDto> parse(InputStream inputStream) throws IOException {
         // 파싱 결과를 담을 List 생성
         List<UploadDataDetailsDto> data = new ArrayList<>();
+        // JSON Mapper 생성
+        ObjectMapper mapper = new ObjectMapper();
 
         // inputStream에서 PPTX 읽기
         try (XMLSlideShow presentation = new XMLSlideShow(inputStream)) {
@@ -65,6 +65,23 @@ public class PptxParser implements DocumentParser {
 
                         // 각 텍스트를 List에 추가
                         data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, rowNum++, text, createdAt));
+                    } else if (shape instanceof XSLFTable table) {
+                        // 표 데이터 처리를 위한 2차원 리스트 생성
+                        List<List<String>> tableList = new ArrayList<>();
+                        // 표 행 순회
+                        for (XSLFTableRow row : table.getRows()) {
+                            List<String> rowMap = new ArrayList<>();
+                            // 표 열 순회
+                            for (XSLFTableCell cell : row.getCells()) {
+                                // 각 칸을 행에 추가
+                                rowMap.add(cell.getText());
+                            }
+                            // 각 행을 추가
+                            tableList.add(rowMap);
+                        }
+
+                        // 최종 파싱된 표 리스트에 추가
+                        data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(tableList), createdAt));
                     }
                 }
             }

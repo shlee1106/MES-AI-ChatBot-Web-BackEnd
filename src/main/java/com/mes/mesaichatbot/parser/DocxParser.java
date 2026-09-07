@@ -9,9 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 public class DocxParser implements DocumentParser {
@@ -36,20 +34,42 @@ public class DocxParser implements DocumentParser {
 
     @Override
     public List<UploadDataDetailsDto> parse(InputStream inputStream) throws IOException {
+        // DOCX 문서 열기
         try (XWPFDocument document = new XWPFDocument(inputStream)) {
+            // 내용을 담을 List 정의
             List<UploadDataDetailsDto> data = new ArrayList<>();
+            // JSON 오브젝트 Mapper 정의
             ObjectMapper mapper = new ObjectMapper();
 
+            // DOCX 문서의 내용 꺼내기
             List<IBodyElement> element = document.getBodyElements();
+            // 그리고 순회
             for (int i = 0; i < element.size(); i++) {
                 if (element.get(i) instanceof XWPFParagraph paragraph) {
+                    // 텍스트 데이터 처리
                     String text = paragraph.getText();
 
+                    // 빈 텍스트 필터링
                     if (!text.isBlank()) {
                         data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, text, createdAt));
                     }
                 } else if (element.get(i) instanceof XWPFTable table) {
-                    data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(table), createdAt));
+                    // 표 데이터 처리를 위한 2차원 리스트 생성
+                    List<List<String>> tableList = new ArrayList<>();
+                    // 표 행 순회
+                    for (XWPFTableRow row : table.getRows()) {
+                        List<String> rowMap = new ArrayList<>();
+                        // 표 열 순회
+                        for (XWPFTableCell cell : row.getTableCells()) {
+                            // 각 칸을 행에 추가
+                            rowMap.add(cell.getText());
+                        }
+                        // 각 행을 추가
+                        tableList.add(rowMap);
+                    }
+
+                    // 최종 파싱된 표 리스트에 추가
+                    data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(tableList), createdAt));
                 }
                 // OCR: 비용 문제가 우려되어 제거함.
 //                    case XWPFPictureData picture -> {

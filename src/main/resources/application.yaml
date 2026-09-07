@@ -23,7 +23,7 @@ spring:
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/mes
   mongodb:
-    database: springrag
+    database: mes
     authentication-database: admin
     host: localhost
     port: 27017

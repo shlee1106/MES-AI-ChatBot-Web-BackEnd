@@ -1,10 +1,7 @@
 package com.mes.mesaichatbot.service;
 
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import com.mes.mesaichatbot.parser.DocumentParser;
-import com.mes.mesaichatbot.parser.DocxParser;
-import com.mes.mesaichatbot.parser.PptxParser;
-import com.mes.mesaichatbot.parser.XlsxParser;
+import com.mes.mesaichatbot.parser.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,7 +32,9 @@ public class DocumentService {
         List<DocumentParser> parsers = List.of(
                 new DocxParser(companyId, fileId, createdAt),
                 new XlsxParser(companyId, fileId, createdAt),
-                new PptxParser(companyId, fileId, createdAt)
+                new PptxParser(companyId, fileId, createdAt),
+                new CsvParser(companyId, fileId, createdAt),
+                new PdfParser(companyId, fileId, createdAt)
         );
 
         // 파일 이름 가져오기

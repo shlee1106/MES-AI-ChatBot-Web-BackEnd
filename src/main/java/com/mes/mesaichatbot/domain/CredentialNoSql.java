@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class CredentialNoSql {
+    @SuppressWarnings("FieldNamingConvention")
     @Id
     private String _id;
 

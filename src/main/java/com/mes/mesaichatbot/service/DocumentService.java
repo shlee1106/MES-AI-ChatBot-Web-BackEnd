@@ -31,16 +31,21 @@ public class DocumentService {
      * @throws IOException <code>file</code>이 잘못됨. 사용자를 탓해봐요.
      */
     public List<UploadDataDetailsDto> parse(MultipartFile file, int companyId, String fileId, LocalDateTime createdAt) throws IOException, IllegalArgumentException {
+        // 문서 파서 준비
         List<DocumentParser> parsers = List.of(
                 new DocxParser(companyId, fileId, createdAt),
                 new XlsxParser(companyId, fileId, createdAt),
                 new PptxParser(companyId, fileId, createdAt)
         );
+
+        // 파일 이름 가져오기
         String filename = file.getOriginalFilename();
+        // 파일 이름 오류 처리
         if (filename == null || filename.isBlank()) {
             throw new IllegalArgumentException("파일명이 없습니다.");
         }
 
+        // 확장자에 따라서 적절한 파서 꺼내기
         DocumentParser parser = parsers.stream()
                 .filter(p -> p.supports(filename))
                 .findFirst()
@@ -50,6 +55,7 @@ public class DocumentService {
                         )
                 );
 
+        // 문서 처리 시도
         try (InputStream stream = file.getInputStream()) {
             return parser.parse(stream);
         }

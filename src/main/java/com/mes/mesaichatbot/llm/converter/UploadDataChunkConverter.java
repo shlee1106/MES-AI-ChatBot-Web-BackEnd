@@ -27,14 +27,10 @@ public class UploadDataChunkConverter {
     public List<Document> convert(
             List<UploadDataDetailsDto> rows,
             ChunkingResponse response
-    ) {
+    ) throws IllegalArgumentException {
 
-        try {
-            validator.validate(rows, response);
-        } catch (IllegalArgumentException e) {
-            log.error("데이터를 검증할 수 없습니다: {}", e.getMessage());
-        }
-
+        // LLM 답변의 유효성 검사
+        validator.validate(rows, response);
 
         Map<RowReference, UploadDataDetailsDto> rowMap =
                 rows.stream()

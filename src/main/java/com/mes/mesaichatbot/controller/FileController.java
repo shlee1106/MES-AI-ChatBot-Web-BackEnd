@@ -78,6 +78,7 @@ public class FileController {
         // TODO: DB에 OriginalFile과 parsedData 저장.
 
         // 업로드된 문서를 MongoDB에 저장.
+        // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
         saveToVectorStore(parsedData);
 
         // 성공 시 200 반환.
@@ -90,12 +91,16 @@ public class FileController {
     protected void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto) {
         CompletableFuture.runAsync(() -> {
                     log.info("Saving to vector store...");
+                    // 청크 시도
                     List<Document> data = llmChunkingService.chunk(uploadDataDetailsDto);
+                    // 저장 시도
                     vectorStore.add(data);
                 }).exceptionally(e -> {
+                    // 예외 발생 시 기록 후 중지
                     log.error(e.getMessage());
                     return null;
                 })
+                // 문제 없으면 Log 출력
                 .thenRun(() -> log.info("Save to vector store complete."));
     }
 }

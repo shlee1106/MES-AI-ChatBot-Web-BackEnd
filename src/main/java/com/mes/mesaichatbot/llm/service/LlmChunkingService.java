@@ -254,6 +254,7 @@ public class LlmChunkingService {
             """;
     //endregion
 
+    // 의존성 자동 주입.
     private final ChatClient client;
     private final UploadDataChunkConverter converter;
     private final ObjectMapper objectMapper;
@@ -264,11 +265,19 @@ public class LlmChunkingService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 업로드된 문서를 LLM에 전송해 청킹을 실행합니다.
+     *
+     * @param rows 파싱된 문서.
+     * @return RAG에 사용할 수 있는 {@link Document}.
+     */
     public List<Document> chunk(
             List<UploadDataDetailsDto> rows
-    ) {
+    ) throws IllegalArgumentException {
+        // 전송할 데이터 조립.
         ChunkRequest data = new ChunkRequest(new DocumentData(rows.getFirst().fileId()), new ChunkingPolicy(), SimplifiedData.from(rows));
 
+        // LLM에 요청 전송.
         ChatClient.CallResponseSpec response = client.prompt().system(SYSTEM_PROMPT).user("""
                 <!-- START OF USER PROMPT -->
                 다음 문서를 의미적으로 Chunking하세요.
@@ -281,11 +290,14 @@ public class LlmChunkingService {
                 %s
                 <!-- END OF USER PROMPT -->
                 """.formatted(data.chunkingPolicy().targetTokens(), data.chunkingPolicy().maxTokens(), data.chunkingPolicy().minTokens(), objectMapper.writeValueAsString(data.rows()))).call();
+        // 답변 임시 저장.
         String responseContent = response.content();
+        // LLM이 답변을 반환하지 않았을 경우의 예외
         if (responseContent == null || responseContent.isBlank()) {
             throw new IllegalStateException("LLM이 답변을 반환하지 않았습니다.");
         }
 
+        // 답변을 파싱하여 반환.
         return converter.convert(rows, objectMapper.readValue(removeMarkdownFence(responseContent), ChunkingResponse.class));
     }
 
@@ -296,16 +308,23 @@ public class LlmChunkingService {
      * @return 정리된 {@link String}.
      */
     private String removeMarkdownFence(String response) {
+        // 텍스트 앞-뒤의 공백 제거
         String trimmed = response.trim();
+
+        // 이미 코드 박스가 아닐 경우 그냥 반환
         if (!trimmed.startsWith("```")) {
             return trimmed;
         }
 
+        // 첫 줄 바꿈 표시자의 인덱스
         int firstLineEnd = trimmed.indexOf('\n');
+        // 코드 박스의 마지막 위치(인덱스)
         int lastFence = trimmed.lastIndexOf("```");
+        // 여러 줄이 아니면 그냥 반환
         if (firstLineEnd < 0 || lastFence <= firstLineEnd) {
             return trimmed;
         }
+        // 2번째 줄부터 코드 박스의 끝 바로 전까지 잘라서 반환
         return trimmed.substring(firstLineEnd + 1, lastFence).trim();
     }
 }

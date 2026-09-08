@@ -1,15 +1,15 @@
 package com.mes.mesaichatbot.domain;
 
 import jakarta.persistence.Id;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.time.LocalDateTime;
 
 @RedisHash("chat_histories_nosql")
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@Setter
 public class ChatHistoryNoSql {
     @Id
     private String id;

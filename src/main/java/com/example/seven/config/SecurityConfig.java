@@ -53,7 +53,7 @@ public class SecurityConfig {
 
         // [추가] 프론트엔드가 응답 헤더의 토큰을 읽을 수 있도록 허용
         config.addExposedHeader("Authorization");
-        config.addExposedHeader("Refresh-Token");
+        
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -75,7 +75,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/join").permitAll()
                         .requestMatchers("/api/v1/jwt/refresh").permitAll()
                         .requestMatchers("/api/v1/login").permitAll()
-                        .requestMatchers("/error").permitAll() //
+                        .requestMatchers("/error").permitAll()
+                        // [추가] 비밀번호 재설정 관련 API 인증 없이 접근 허용
+                        .requestMatchers("/api/v1/password/**").permitAll()
+
                         .requestMatchers("/api/v1/user").hasRole("USER")
                         .anyRequest().hasRole("ADMIN")
                 );

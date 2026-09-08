@@ -24,8 +24,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: 발신용계정@gmail.com
-    password: 발급받은앱비밀번호16자리
+    username: 발신자 이메일 계정
+    password: 해당계정의 앱 비밀번호 발급 받은 후 16자리 입력
     properties:
       mail:
         smtp:

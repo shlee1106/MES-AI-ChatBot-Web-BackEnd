@@ -43,16 +43,24 @@ public class PasswordResetService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
         message.setSubject("[MES AI ChatBot 안내] 비밀번호 재설정 링크 이메일");
-        message.setText("비밀번호 재설정 링크 : http://localhost:3000/reset-pw?token=" + token +
-                "\n\n(보안을 위해 본 링크는 5분후 자동으로 만료됩니다.)");
+        message.setText("비밀번호 재설정 링크: http://localhost:8080/api/v1/password/verify?token=" + token +
+                "\n\n(보안을 위해 본 링크는 5분 후 만료됩니다.)");
         mailSender.send(message);
     }
 
+    @Transactional(readOnly = true)
+    public void verifyTokenExists(String token){
+        if (!tokenRepository.existsById(token)) {
+            throw new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다.");
+        }
+    }
+
+
     @Transactional
-    public void updatePassword(PasswordUpdateRequestDTO dto) {
+    public void updatePassword(String token, String newPassword) {
 
         // Redis에서 토큰 조회(5분이 지나 삭제되었으면 에러발생)
-        PasswordResetToken resetToken = tokenRepository.findById(dto.token())
+        PasswordResetToken resetToken = tokenRepository.findById(token)
                 .orElseThrow(() -> new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다."));
 
 
@@ -62,7 +70,7 @@ public class PasswordResetService {
         ).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 비밀번호 암호화 후 업데이트
-        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        user.setPassword(passwordEncoder.encode(newPassword));
 
         // 사용이 완료된 임시 토큰은 Redis에서 즉시 파기하여 재사용 방지
         tokenRepository.delete(resetToken);

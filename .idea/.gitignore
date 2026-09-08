@@ -8,5 +8,9 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+modules/
+gradle.xml
 dataSources.xml
 db-forest-config.xml
+modules.xml
+

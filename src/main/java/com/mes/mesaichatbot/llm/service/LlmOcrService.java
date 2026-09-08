@@ -1,4 +1,4 @@
-package com.mes.mesaichatbot.service;
+package com.mes.mesaichatbot.llm.service;
 
 import org.apache.poi.xwpf.usermodel.XWPFPictureData;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,7 +15,7 @@ public class LlmOcrService {
     public void setChatClient(ChatClient.Builder chatClient) {
         this.chatClient = chatClient.build();
     }
-    
+
     public String recognizeImage(XWPFPictureData image) {
         String systemPrompt = """
                 당신은 OCR 전문가입니다.

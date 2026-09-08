@@ -5,26 +5,29 @@ import com.mes.mesaichatbot.domain.OriginalFile;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import com.mes.mesaichatbot.repository.OriginalFileRepository;
-import com.mes.mesaichatbot.repository.UploadDataRowRepository;
+import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController("/files")
@@ -34,12 +37,14 @@ public class FileController {
      * 문서 파싱 Service.
      */
     private final DocumentService documentService;
-    private final ObjectMapper objectMapper;
+    private final VectorStore vectorStore;
+    private final LlmChunkingService llmChunkingService;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, OriginalFileRepository fileRepository, UploadDataRowRepository uploadDataRowRepository, ObjectMapper objectMapper) {
+    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService) {
         this.documentService = documentService;
-        this.objectMapper = objectMapper;
+        this.vectorStore = vectorStore;
+        this.llmChunkingService = llmChunkingService;
     }
 
     /**
@@ -72,7 +77,25 @@ public class FileController {
 
         // TODO: DB에 OriginalFile과 parsedData 저장.
 
+        // 업로드된 문서를 MongoDB에 저장.
+        saveToVectorStore(parsedData);
+
         // 성공 시 200 반환.
+        // MongoDB 저장 여부와는 상관 없음.
         return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
+    }
+
+    // 문서를 비동기로 MongoDB에 저장.
+    @Async("saveToVectorStore")
+    protected void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto) {
+        CompletableFuture.runAsync(() -> {
+                    log.info("Saving to vector store...");
+                    List<Document> data = llmChunkingService.chunk(uploadDataDetailsDto);
+                    vectorStore.add(data);
+                }).exceptionally(e -> {
+                    log.error(e.getMessage());
+                    return null;
+                })
+                .thenRun(() -> log.info("Save to vector store complete."));
     }
 }

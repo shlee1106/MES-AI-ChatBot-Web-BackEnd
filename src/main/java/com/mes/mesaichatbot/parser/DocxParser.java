@@ -43,17 +43,19 @@ public class DocxParser implements DocumentParser {
 
             // DOCX 문서의 내용 꺼내기
             List<IBodyElement> element = document.getBodyElements();
+
+            int rowNumber = 1;
             // 그리고 순회
-            for (int i = 0; i < element.size(); i++) {
-                if (element.get(i) instanceof XWPFParagraph paragraph) {
+            for (IBodyElement iBodyElement : element) {
+                if (iBodyElement instanceof XWPFParagraph paragraph) {
                     // 텍스트 데이터 처리
                     String text = paragraph.getText();
 
                     // 빈 텍스트 필터링
                     if (!text.isBlank()) {
-                        data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, text, createdAt));
+                        data.add(new UploadDataDetailsDto(1, companyId, fileId, rowNumber++, text, createdAt));
                     }
-                } else if (element.get(i) instanceof XWPFTable table) {
+                } else if (iBodyElement instanceof XWPFTable table) {
                     // 표 데이터 처리를 위한 2차원 리스트 생성
                     List<List<String>> tableList = new ArrayList<>();
                     // 표 행 순회
@@ -69,7 +71,7 @@ public class DocxParser implements DocumentParser {
                     }
 
                     // 최종 파싱된 표 리스트에 추가
-                    data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(tableList), createdAt));
+                    data.add(new UploadDataDetailsDto(1, companyId, fileId, rowNumber++, mapper.writeValueAsString(tableList), createdAt));
                 }
                 // OCR: 비용 문제가 우려되어 제거함.
 //                    case XWPFPictureData picture -> {

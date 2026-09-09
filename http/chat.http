@@ -2,7 +2,7 @@
 
 POST http://localhost:8080/chat/sessionrooms
 Content-Type: application/json
-Authorization: sans
+Authorization: test
 
 {
   "title": "chicken"
@@ -18,7 +18,7 @@ Authorization: sans
 # 저장된 sessionId 재사용
 POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization: sans
+Authorization: test
 
 {
   "message": "비가 너무 많이 와서 결근하려고 해. 가능할까?"
@@ -29,10 +29,14 @@ Authorization: sans
 # 저장된 sessionId 재사용
 POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization: sans
+Authorization: test
 
 {
   "message": "근거가 있어?"
 }
 
-### 
+### 대화 내역 조회
+GET http://localhost:8080/chat/sessions/{{sessionId}}/histories
+Authorization: test
+
+###

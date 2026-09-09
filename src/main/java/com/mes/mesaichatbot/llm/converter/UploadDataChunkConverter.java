@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 업로드된 문서를 변환하기 위한 도구의 모음.
+ */
 @Slf4j
 @Component
 public class UploadDataChunkConverter {

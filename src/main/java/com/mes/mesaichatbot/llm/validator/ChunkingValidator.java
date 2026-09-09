@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ * LLM의 답변을 검증하는 도구.
+ */
 @Component
 public class ChunkingValidator {
 

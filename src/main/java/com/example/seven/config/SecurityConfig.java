@@ -38,6 +38,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    // 시스템의 공식 비밀번호 암호화 도구(MySQL)
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }

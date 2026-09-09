@@ -1,5 +1,6 @@
 package com.example.seven.filter;
 
+import com.example.seven.domain.user.dto.JoinRequestDTO;
 import com.example.seven.domain.user.dto.LoginRequestDTO;
 import com.fasterxml.jackson.databind.ObjectMapper; 
 import jakarta.servlet.FilterChain;
@@ -50,9 +51,11 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
             LoginRequestDTO loginDTO = objectMapper.readValue(messageBody, LoginRequestDTO.class);
 
+
             Long companyId = loginDTO.companyId();
             Long employeeId = loginDTO.employeeId();
             String password = loginDTO.password();
+
 
             String combinedUsername = companyId + "_" + employeeId;
 

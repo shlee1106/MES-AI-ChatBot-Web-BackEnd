@@ -1,8 +1,7 @@
 package com.mes.mesaichatbot.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -10,6 +9,8 @@ import java.time.LocalDateTime;
 @Table(name = "chat_session")
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatSession {
     @Id
     @Column(name = "session_id")

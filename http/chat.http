@@ -1,4 +1,4 @@
-### 세션 만들기
+### 대화 세션 만들기
 
 POST http://localhost:8080/chat/sessionrooms
 Content-Type: application/json
@@ -9,11 +9,13 @@ Authorization: sans
 }
 
 > {%
+    // 재사용하기 위해 sessionId를 저장
     client.global.set("sessionId", response.body.sessionId);
 %}
 
-### 세션에 첫 질문
+### 대화 세션에 첫 질문
 
+# 저장된 sessionId 재사용
 POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
 Authorization: sans
@@ -24,6 +26,7 @@ Authorization: sans
 
 ### 이어서 질문
 
+# 저장된 sessionId 재사용
 POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
 Authorization: sans

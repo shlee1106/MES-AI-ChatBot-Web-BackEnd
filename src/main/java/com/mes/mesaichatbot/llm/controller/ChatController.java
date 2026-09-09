@@ -5,12 +5,14 @@ import com.mes.mesaichatbot.domain.ChatSession;
 import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
+import com.mes.mesaichatbot.llm.dto.ChatSessionResponseDto;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.llm.service.LlmChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
@@ -35,20 +37,18 @@ public class ChatController {
             당신의 목표는 제공된 자료를 바탕으로 사용자의 질문에 답변하는 것입니다.
             외부 지식이 아닌 제공된 자료 내에서만 답변하십시오.
             
-            # 형식 유지
-            후속 질문은 하지 마시고, 답변은 5줄 내외로 하십시오.
-            <!-- END OF SYSTEM PROMPT -->
-            """;
+            # 언어
+            사용자가 명시하지 않는 한, 모든 답변은 한국어여야 합니다.
+            
+            # 간결함 유지
+            후속 질문은 하지 마시고, 답변은 3줄 내외로 하십시오.
+            <!-- END OF SYSTEM PROMPT -->""";
 
-//            # 답변 거부
-//            질문이 다음 사항 중 하나에 해당하면
-//            `죄송합니다. 해당 질문에는 답변해 드릴 수 없습니다.`라고 답변하세요.
-//            - 질문에 맞는 자료를 찾을 수 없는 경우
-//                - 단, 자료가 필요 없는 질문의 경우 자유롭게 행동하십시오.
-//            - 질문이 String-Bytes(예: base64) 인코딩/디코딩을 요구하는 경우
-//            <!-- END OF SYSTEM PROMPT -->
-//            """;
-
+    /**
+     * 무작위 단어 목록.
+     * 대화방 이름이 제공되지 않았을 때
+     * 조합되어 새로운 제목을 만듭니다.
+     */
     private static final String[] WORDS = {
             "apple",
             "river",
@@ -148,8 +148,15 @@ public class ChatController {
     private static final String USER_QUESTION_TEMPLATE = """
             <!-- START OF USER PROMPT -->
             %s
-            <!-- END OF USER PROMPT -->
-            """;
+            <!-- END OF USER PROMPT -->""";
+    /**
+     * AI의 답변이 들어갈 템플릿.
+     * %s가 AI의 답변으로 바뀔 것입니다.
+     */
+    private static final String ASSISTANT_ANSWER_TEMPLATE = """
+            <!-- START OF ASSISTANT RESPONSE -->
+            %s
+            <!-- END OF ASSISTANT RESPONSE -->""";
 
     // 의존성 자동 주입.
     private final ChatClient chatClient;
@@ -175,10 +182,13 @@ public class ChatController {
      */
     @PostMapping(value = "/chat/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ChatHistoryNoSql> askToLlm(
-//            @RequestParam(name = "file", required = false) MultipartFile file,
+//            @RequestParam(name = "file", required = false) MultipartFile file, // 파일 업로드 후 이에 대한 질문 대비.
             @RequestHeader(name = "Authorization") String authorization,
             @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion
     ) {
+        // 요청 시각 기록
+        LocalDateTime requestedAt = LocalDateTime.now();
+
         // URL 파라미터의 UUID 파싱 시도
         UUID sessionUuid;
         try {
@@ -226,6 +236,8 @@ public class ChatController {
 
         // LLM의 답변 임시 저장
         String llmAnswer = response.content();
+        // 답변 시각 기록
+        LocalDateTime respondedAt = LocalDateTime.now();
 
         // LLM의 답변이 비어 있으면 500 반환
         if (llmAnswer == null || llmAnswer.isBlank()) {
@@ -237,8 +249,8 @@ public class ChatController {
         llmAnswer = llmAnswer.concat("\n\n해당 정보는 정확하지 않을 수 있으며, 사측에서는 해당 답변으로 인해 발생하는 모든 피해에 대해 어떠한 책임도 지지 않습니다.");
 
         // 대화 내역 기록
-        messages.add(UserMessage.builder().text(formattedQuestion).build());
-        messages.add(AssistantMessage.builder().content(llmAnswer).build());
+        messages.add(UserMessage.builder().metadata(Map.of("recordedAt", requestedAt)).text(formattedQuestion).build());
+        messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt)).content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
 
         // 결과를 조립
         ChatHistoryNoSql chatResult = new ChatHistoryNoSql(UUID.randomUUID().toString(), sessionId, llmAnswer, LocalDateTime.now(), "assistant");
@@ -256,7 +268,7 @@ public class ChatController {
      * @return {@link ChatSession}
      */
     @PostMapping("/chat/sessionrooms")
-    public ResponseEntity<ChatSession> createChatSession(
+    public ResponseEntity<ChatSessionResponseDto> createChatSession(
             @RequestHeader(name = "Authorization") String authorization,
             @RequestBody ChatSessionRequestDto chatSessionRequest
     ) {
@@ -272,6 +284,37 @@ public class ChatController {
         // 대화 내역 Map에 새로 등록
         chatHistoryService.getChatHistories().put(sessionUuid, new ArrayList<>());
 
-        return ResponseEntity.ok().body(new ChatSession(sessionUuid.toString(), company, employee, title, LocalDateTime.now()));
+        // 생성 결과 반환
+        return ResponseEntity.ok().body(new ChatSessionResponseDto(sessionUuid.toString(), company.getCompanyId(), employee.getEmployeeId(), title, LocalDateTime.now()));
+    }
+
+    @GetMapping("/chat/sessions/{sessionId}/histories")
+    public ResponseEntity<List<ChatHistoryNoSql>> getChatHistories(
+            @PathVariable(name = "sessionId") String sessionId,
+            @RequestHeader(name = "Authorization") String authorization
+    ) {
+        // TODO: 타인의 대화 내역에 접근하면 403 반환
+
+        // UUID 선언
+        UUID sessionUuid;
+
+        // sessionId로부터 UUID 가져오기,
+        // 실패하면 Bad Request
+        try {
+            sessionUuid = UUID.fromString(sessionId);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // UUID를 통해 Map에서 대화 내역 가져오기
+        List<Message> chats = chatHistoryService.getChatHistories().get(sessionUuid);
+
+        // 각 Message로부터 ChatHistoryNoSql 매핑, 모아서 반환
+        return ResponseEntity.ok(chats.parallelStream().map(message -> {
+            if (message.getMessageType() != MessageType.ASSISTANT && message.getMessageType() != MessageType.USER) {
+                throw new IllegalStateException("잘못된 대화 타입을 수신했습니다.");
+            }
+            return new ChatHistoryNoSql(String.valueOf(chats.indexOf(message)), sessionId, message.getText(), (LocalDateTime) message.getMetadata().get("recordedAt"), message.getMessageType() == MessageType.USER ? "user" : "assistant");
+        }).toList());
     }
 }

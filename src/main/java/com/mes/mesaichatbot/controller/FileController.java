@@ -1,9 +1,9 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.domain.Company;
-import com.mes.mesaichatbot.domain.OriginalFile;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
+import com.mes.mesaichatbot.dto.OriginalFileDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.service.DocumentService;
@@ -62,7 +62,7 @@ public class FileController {
         UserMember employee = new UserMember(); // TODO: 인증 시스템 연동 시 사원정보 입력
 
         // DB에 삽입할 새 행 생성.
-        OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
+        OriginalFileDto originalFile = new OriginalFileDto(fileId.toString(), company.getCompanyId(), employee.getEmployeeId(), file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;

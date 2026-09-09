@@ -25,8 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -77,9 +76,11 @@ public class FileController {
 
         // TODO: DB에 OriginalFile과 parsedData 저장.
 
+        log.info(parsedData.toString());
+
         // 업로드된 문서를 MongoDB에 저장.
         // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
-        saveToVectorStore(parsedData);
+        saveToVectorStore(parsedData, StringUtils.getFilenameExtension(file.getOriginalFilename()));
 
         // 성공 시 200 반환.
         // MongoDB 저장 여부와는 상관 없음.
@@ -88,16 +89,61 @@ public class FileController {
 
     // 문서를 비동기로 MongoDB에 저장.
     @Async("saveToVectorStore")
-    protected void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto) {
+    protected void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType) {
         CompletableFuture.runAsync(() -> {
                     log.info("Saving to vector store...");
-                    // 청크 시도
-                    List<Document> data = llmChunkingService.chunk(uploadDataDetailsDto);
+                    List<Document> data;
+
+                    // CSV는 청크하지 않고 그대로 매핑 후 저장
+                    if (fileType.equalsIgnoreCase("csv")) {
+                        data = new ArrayList<>();
+                        for (int i = 0; i < uploadDataDetailsDto.size(); i++) {
+                            String content = uploadDataDetailsDto.get(i).rowData();
+
+                            Map<String, Object> metadata =
+                                    new HashMap<>();
+
+
+                            metadata.put(
+                                    "companyId",
+                                    uploadDataDetailsDto.get(i).companyId()
+                            );
+
+                            metadata.put(
+                                    "fileId",
+                                    uploadDataDetailsDto.get(i).fileId()
+                            );
+
+                            metadata.put(
+                                    "rowNumbers",
+                                    uploadDataDetailsDto.get(i).rowNumber()
+                            );
+
+                            metadata.put(
+                                    "startRowNumber",
+                                    0
+                            );
+
+                            metadata.put(
+                                    "endRowNumber",
+                                    uploadDataDetailsDto.size()
+                            );
+
+                            data.add(new Document(
+                                    String.format("doc-%s-%s", uploadDataDetailsDto.get(i).fileId(), "chunk-%03d".formatted(i + 1)),
+                                    content,
+                                    metadata
+                            ));
+                        }
+                    } else {
+                        // 청크 시도
+                        data = llmChunkingService.chunk(uploadDataDetailsDto);
+                    }
                     // 저장 시도
                     vectorStore.add(data);
                 }).exceptionally(e -> {
                     // 예외 발생 시 기록 후 중지
-                    log.error(e.getMessage());
+                    log.error(String.valueOf(e));
                     return null;
                 })
                 // 문제 없으면 Log 출력

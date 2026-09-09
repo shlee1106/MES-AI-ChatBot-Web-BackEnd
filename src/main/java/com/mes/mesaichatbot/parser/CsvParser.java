@@ -44,10 +44,17 @@ public class CsvParser implements DocumentParser {
         // CSV 데이터를 InputStream에서 읽기
         try (CSVReader reader = new CSVReader(new InputStreamReader(inputStream))) {
             List<String[]> rows = reader.readAll();
+            String[] head = rows.getFirst();
+
             // 각 행 순회
-            for (int i = 0; i < rows.size(); i++) {
+            for (int i = 1; i < rows.size(); i++) {
+                List<String> everyRows = new ArrayList<>();
+                // 각 열 매핑
+                for (int j = 0; j < head.length; j++) {
+                    everyRows.add("%s: %s\n".formatted(head[j], rows.get(i)[j]));
+                }
                 // 데이터 추가
-                data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(rows.get(i)), createdAt));
+                data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(everyRows), createdAt));
             }
         } catch (CsvException e) {
             // CsvException 발생 시 사용자가 잘못된 데이터를 던진 것으로 간주.

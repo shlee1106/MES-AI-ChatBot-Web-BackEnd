@@ -250,8 +250,7 @@ public class LlmChunkingService {
             10. 모든 chunkId가 고유한가?
             
             위 조건을 모두 만족하는 JSON만 출력하세요.
-            <!-- END OF SYSTEM PROMPT -->
-            """;
+            <!-- END OF SYSTEM PROMPT -->""";
     //endregion
 
     // 의존성 자동 주입.
@@ -288,8 +287,7 @@ public class LlmChunkingService {
                 
                 [Rows]
                 %s
-                <!-- END OF USER PROMPT -->
-                """.formatted(data.chunkingPolicy().targetTokens(), data.chunkingPolicy().maxTokens(), data.chunkingPolicy().minTokens(), objectMapper.writeValueAsString(data.rows()))).call();
+                <!-- END OF USER PROMPT -->""".formatted(data.chunkingPolicy().targetTokens(), data.chunkingPolicy().maxTokens(), data.chunkingPolicy().minTokens(), objectMapper.writeValueAsString(data.rows()))).call();
         // 답변 임시 저장.
         String responseContent = response.content();
         // LLM이 답변을 반환하지 않았을 경우의 예외

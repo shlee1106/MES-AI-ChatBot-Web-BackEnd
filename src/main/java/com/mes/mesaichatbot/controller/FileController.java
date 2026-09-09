@@ -76,8 +76,6 @@ public class FileController {
 
         // TODO: DB에 OriginalFile과 parsedData 저장.
 
-        log.info(parsedData.toString());
-
         // 업로드된 문서를 MongoDB에 저장.
         // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
         saveToVectorStore(parsedData, StringUtils.getFilenameExtension(file.getOriginalFilename()));

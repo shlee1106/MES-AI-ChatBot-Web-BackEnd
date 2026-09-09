@@ -1,0 +1,35 @@
+### 세션 만들기
+
+POST http://localhost:8080/chat/sessionrooms
+Content-Type: application/json
+Authorization: sans
+
+{
+  "title": "chicken"
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+%}
+
+### 세션에 첫 질문
+
+POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
+Content-Type: application/json
+Authorization: sans
+
+{
+  "message": "비가 너무 많이 와서 결근하려고 해. 가능할까?"
+}
+
+### 이어서 질문
+
+POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
+Content-Type: application/json
+Authorization: sans
+
+{
+  "message": "근거가 있어?"
+}
+
+### 

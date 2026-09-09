@@ -1,0 +1,31 @@
+### 파일 업로드: 휴가지각결근정책.docx
+POST http://localhost:8080/files/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="휴가지각결근정책.docx"
+
+< ../samples/휴가지각결근정책.docx
+--WebAppBoundary--
+
+### 파일 업로드: timetable.xlsx
+POST http://localhost:8080/files/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="timetable.xlsx"
+
+< ../samples/timetable.xlsx
+--WebAppBoundary--
+
+### 파일 업로드: 발표자료.pptx
+POST http://localhost:8080/files/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="발표자료.pptx"
+
+< ../samples/발표자료.pptx
+--WebAppBoundary--
+
+###

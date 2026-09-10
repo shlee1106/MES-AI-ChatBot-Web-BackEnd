@@ -29,14 +29,8 @@ public class OriginalFile {
     @Column(name = "origin_name", nullable = false)
     private String originName;
 
-    @Column(name = "save_file_name", nullable = false)
-    private String saveFileName;
-
     @Column(name = "file_type", nullable = false, length = 20)
     private String fileType;
-
-    @Column(name = "file_data_path", nullable = false)
-    private String fileDataPath;
 
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;

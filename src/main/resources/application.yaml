@@ -7,7 +7,7 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        auto_qu
+        show_sql: true
   ai:
     vectorstore:
       mongodb:

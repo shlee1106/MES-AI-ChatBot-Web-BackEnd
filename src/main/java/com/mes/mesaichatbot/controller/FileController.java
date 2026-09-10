@@ -6,6 +6,7 @@ import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
+import com.mes.mesaichatbot.repository.OriginalFileRepository;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
@@ -39,12 +40,14 @@ public class FileController {
     private final DocumentService documentService;
     private final VectorStore vectorStore;
     private final LlmChunkingService llmChunkingService;
+    private final OriginalFileRepository originalFileRepository;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService) {
+    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, OriginalFileRepository originalFileRepository) {
         this.documentService = documentService;
         this.vectorStore = vectorStore;
         this.llmChunkingService = llmChunkingService;
+        this.originalFileRepository = originalFileRepository;
     }
 
     /**
@@ -57,12 +60,15 @@ public class FileController {
     public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) { // TODO: 인증 시스템 연동 시 required = true로 설정 혹은 지우기.
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
         Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
         UserMember employee = new UserMember(); // TODO: 인증 시스템 연동 시 사원정보 입력
+        //메타데이터 전송을 위해 밑에 데이터를 추출하기위한 변수 2개 추가생성
+        String originName = file.getOriginalFilename();
+        String fileType = StringUtils.getFilenameExtension(originName);
+        LocalDateTime now = LocalDateTime.now();
 
         // DB에 삽입할 새 행 생성.
-        OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
+        OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), fileType, now);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;
@@ -75,7 +81,9 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
 
-        // TODO: DB에 OriginalFile과 parsedData 저장.
+        // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성(테스트 미실시)
+        originalFileRepository.save(originalFile);
+
 
         // 업로드된 문서를 MongoDB에 저장.
         // 해당 함수는 비동기이므로 백그라운드에서 실행됨.

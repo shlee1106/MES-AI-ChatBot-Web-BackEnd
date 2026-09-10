@@ -5,16 +5,11 @@ import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.OriginalFileDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -26,7 +21,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController("/files")
@@ -36,14 +30,10 @@ public class FileController {
      * 문서 파싱 Service.
      */
     private final DocumentService documentService;
-    private final VectorStore vectorStore;
-    private final LlmChunkingService llmChunkingService;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService) {
+    public FileController(DocumentService documentService) {
         this.documentService = documentService;
-        this.vectorStore = vectorStore;
-        this.llmChunkingService = llmChunkingService;
     }
 
     /**
@@ -78,73 +68,10 @@ public class FileController {
 
         // 업로드된 문서를 MongoDB에 저장.
         // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
-        saveToVectorStore(parsedData, StringUtils.getFilenameExtension(file.getOriginalFilename()));
+        documentService.saveToVectorStore(parsedData, StringUtils.getFilenameExtension(file.getOriginalFilename()));
 
         // 성공 시 200 반환.
         // MongoDB 저장 여부와는 상관 없음.
         return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
-    }
-
-    // 문서를 비동기로 MongoDB에 저장.
-    @Async("saveToVectorStore")
-    protected void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType) {
-        CompletableFuture.runAsync(() -> {
-                    log.info("Saving to vector store...");
-                    List<Document> data;
-
-                    // CSV는 청크하지 않고 그대로 매핑 후 저장
-                    if (fileType.equalsIgnoreCase("csv")) {
-                        data = new ArrayList<>();
-                        for (int i = 0; i < uploadDataDetailsDto.size(); i++) {
-                            String content = uploadDataDetailsDto.get(i).rowData();
-
-                            Map<String, Object> metadata =
-                                    new HashMap<>();
-
-
-                            metadata.put(
-                                    "companyId",
-                                    uploadDataDetailsDto.get(i).companyId()
-                            );
-
-                            metadata.put(
-                                    "fileId",
-                                    uploadDataDetailsDto.get(i).fileId()
-                            );
-
-                            metadata.put(
-                                    "rowNumbers",
-                                    uploadDataDetailsDto.get(i).rowNumber()
-                            );
-
-                            metadata.put(
-                                    "startRowNumber",
-                                    0
-                            );
-
-                            metadata.put(
-                                    "endRowNumber",
-                                    uploadDataDetailsDto.size()
-                            );
-
-                            data.add(new Document(
-                                    String.format("doc-%s-%s", uploadDataDetailsDto.get(i).fileId(), "chunk-%03d".formatted(i + 1)),
-                                    content,
-                                    metadata
-                            ));
-                        }
-                    } else {
-                        // 청크 시도
-                        data = llmChunkingService.chunk(uploadDataDetailsDto);
-                    }
-                    // 저장 시도
-                    vectorStore.add(data);
-                }).exceptionally(e -> {
-                    // 예외 발생 시 기록 후 중지
-                    log.error(String.valueOf(e));
-                    return null;
-                })
-                // 문제 없으면 Log 출력
-                .thenRun(() -> log.info("Save to vector store complete."));
     }
 }

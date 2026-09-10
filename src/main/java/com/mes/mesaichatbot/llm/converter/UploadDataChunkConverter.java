@@ -27,6 +27,15 @@ public class UploadDataChunkConverter {
         this.validator = validator;
     }
 
+    /**
+     * 각 행의 정보를 청크 데이터와 매핑하여
+     * {@code List<Document>} 형태로 변환합니다.
+     *
+     * @param rows     {@code List<UploadDataDetailsDto>}
+     * @param response LLM이 반환한 청크 데이터.
+     * @return {@code List<UploadDataDetailsDto>}
+     * @throws IllegalArgumentException 청크 데이터가 잘못됨.
+     */
     public List<Document> convert(
             List<UploadDataDetailsDto> rows,
             ChunkingResponse response
@@ -35,6 +44,7 @@ public class UploadDataChunkConverter {
         // LLM 답변의 유효성 검사
         validator.validate(rows, response);
 
+        // 각 UploadDetailsDto에 행 참조 데이터 부여
         Map<RowReference, UploadDataDetailsDto> rowMap =
                 rows.stream()
                         .collect(Collectors.toMap(
@@ -45,6 +55,7 @@ public class UploadDataChunkConverter {
                                 Function.identity()
                         ));
 
+        // 각 청크 데이터를 List<Document> 에 매핑
         return response.chunks()
                 .stream()
                 .map(chunk -> {

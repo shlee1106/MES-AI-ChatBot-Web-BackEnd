@@ -39,7 +39,7 @@ public class JWTFilter extends OncePerRequestFilter {
         String authorization = request.getHeader("Authorization");
         // [추가] 재발급 경로는 만료된 토큰을 들고 오므로 검사 없이 무조건 통과시킴.
         String requestUri = request.getRequestURI();
-        if (requestUri.equals("/api/v1/jwt/refresh")) {
+        if (requestUri.equals("/api/v1/jwt/refresh") || requestUri.equals("/api/v1/logout")) {
             filterChain.doFilter(request, response);
             return;
         }

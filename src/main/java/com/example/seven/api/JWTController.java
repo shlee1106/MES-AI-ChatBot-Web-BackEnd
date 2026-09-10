@@ -30,7 +30,7 @@ public class JWTController {
         }
 
         try {
-            // 3. 기존에 만들어두신 RefreshService를 그대로 활용하여 새 토큰을 발급.
+            // 3. 기존에 만들어둔 RefreshService를 그대로 활용하여 새 토큰을 발급.
             String newAccessToken = refreshService.refresh(refreshToken);
 
             // 4. 프론트엔드의 인터셉터가 읽을 수 있도록 응답 헤더에 새 토큰을 꽂아줌.

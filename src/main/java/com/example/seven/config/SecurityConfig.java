@@ -1,5 +1,7 @@
 package com.example.seven.config;
 
+import com.example.seven.domain.jwt.repository.RefreshRepository;
+import com.example.seven.filter.CustomLogoutFilter;
 import com.example.seven.filter.JWTFilter;
 import com.example.seven.filter.LoginFilter;
 import com.example.seven.handler.LoginSuccessHandler;
@@ -24,11 +26,13 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final LoginSuccessHandler loginSuccessHandler;
     private final JWTUtil jwtUtil;
+    private final RefreshRepository refreshRepository;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jwtUtil) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
         this.loginSuccessHandler = loginSuccessHandler;
+        this.refreshRepository = refreshRepository;
     }
 
     @Bean
@@ -84,10 +88,15 @@ public class SecurityConfig {
                         .anyRequest().hasRole("ADMIN")
                 );
 
-        // [수정] JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
+        // JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
         http
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
+
+        // 필터 체인 설정 부분에 로그아웃 필터 추가
+        http
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         http
                 .sessionManagement(session -> session

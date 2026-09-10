@@ -24,8 +24,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: 발신자 이메일
-    password: 이메일 앱 비밀번호 16자리
+    username: #발신자 이메일
+    password: #이메일 앱 비밀번호 16자리
     properties:
       mail:
         smtp:

@@ -1,11 +1,44 @@
-# Java 25 환경 적용
-FROM eclipse-temurin:25-jdk-alpine
+# 프로젝트 소스 코드 컴파일 단계
+FROM eclipse-temurin:25 AS complier
+# 작업 경로를 /compile로 설정 (cd /compile)
+WORKDIR /complie
 
-WORKDIR /app
+# 프로젝트를 컨테이너로 복사
+COPY . .
 
-# 빌드된 JAR 파일을 컨테이너로 복사
-COPY build/libs/*SNAPSHOT.jar app.jar
+# 컨테이너임을 명시 (외부 의존성 테스트 건너뛰기)
+ENV CI=true
 
-EXPOSE 8080
+# 빌드 실행
+RUN ./gradlew build
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# 프로젝트 빌드 단계
+FROM eclipse-temurin:25 AS builder
+# 작업 경로를 /builder로 설정 (cd /builder)
+WORKDIR /builder
+
+# jar 파일 경로 설정
+ARG JAR_FILE=build/libs/*.jar
+
+# 컴파일 단계에서 만들어진 jar 파일을 복사
+COPY --from=complier /compile/${JAR_FILE} application.jar
+
+# jar 파일 추출
+RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+
+# 실행 단계
+FROM eclipse-temurin:25
+# 작업 경로를 /application으로 설정 (cd /application)
+WORKDIR /application
+
+# Copy the extracted jar contents from the builder container into the working directory in the runtime container
+# Every copy step creates a new docker layer
+# This allows docker to only pull the changes it really needs
+COPY --from=builder /builder/extracted/dependencies/ ./
+COPY --from=builder /builder/extracted/spring-boot-loader/ ./
+COPY --from=builder /builder/extracted/snapshot-dependencies/ ./
+COPY --from=builder /builder/extracted/application/ ./
+# Start the application jar - this is not the uber jar used by the builder
+# This jar only contains application code and references to the extracted jar files
+# This layout is efficient to start up and AOT cache (and CDS) friendly
+ENTRYPOINT ["java", "-jar", "application.jar"]

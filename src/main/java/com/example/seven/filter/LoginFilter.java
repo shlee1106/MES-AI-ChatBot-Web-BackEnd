@@ -2,13 +2,15 @@ package com.example.seven.filter;
 
 import com.example.seven.domain.user.dto.JoinRequestDTO;
 import com.example.seven.domain.user.dto.LoginRequestDTO;
-import com.fasterxml.jackson.databind.ObjectMapper; 
+import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,7 +18,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StreamUtils;
 
@@ -24,8 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class LoginFilter extends AbstractAuthenticationProcessingFilter {
-
-    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/api/v1/login", "POST");
+    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.pathPattern(HttpMethod.POST,"/api/v1/login");
 
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
 
@@ -76,8 +76,8 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
     }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-                                            Authentication authResult) throws IOException, ServletException {
+    protected void successfulAuthentication(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain,
+                                            @NonNull Authentication authResult) throws IOException, ServletException {
         authenticationSuccessHandler.onAuthenticationSuccess(request, response, authResult);
     }
 }

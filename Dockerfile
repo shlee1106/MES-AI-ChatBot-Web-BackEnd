@@ -1,33 +1,20 @@
 # 프로젝트 소스 코드 컴파일 단계
-FROM eclipse-temurin:25 AS complier
-# 작업 경로를 /compile로 설정 (cd /compile)
-WORKDIR /complie
+FROM eclipse-temurin:25-alpine AS builder
+# 컨테이너임을 명시 (외부 의존성 테스트 건너뛰기)
+ENV CI=true
+# 작업 경로를 /builder로 설정 (cd /builder)
+WORKDIR /builder
 
 # 프로젝트를 컨테이너로 복사
 COPY . .
 
-# 컨테이너임을 명시 (외부 의존성 테스트 건너뛰기)
-ENV CI=true
-
 # 빌드 실행
-RUN ./gradlew build
-
-# 프로젝트 빌드 단계
-FROM eclipse-temurin:25 AS builder
-# 작업 경로를 /builder로 설정 (cd /builder)
-WORKDIR /builder
-
-# jar 파일 경로 설정
-ARG JAR_FILE=build/libs/*.jar
-
-# 컴파일 단계에서 만들어진 jar 파일을 복사
-COPY --from=complier /compile/${JAR_FILE} application.jar
-
+RUN ./gradlew build --no-daemon
 # jar 파일 추출
-RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+RUN java -Djarmode=tools -jar build/libs/*SNAPSHOT.jar extract --layers --destination extracted
 
 # 실행 단계
-FROM eclipse-temurin:25
+FROM eclipse-temurin:25-alpine
 # 작업 경로를 /application으로 설정 (cd /application)
 WORKDIR /application
 

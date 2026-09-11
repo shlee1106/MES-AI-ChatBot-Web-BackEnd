@@ -6,6 +6,7 @@ import com.example.seven.filter.JWTFilter;
 import com.example.seven.filter.LoginFilter;
 import com.example.seven.handler.LoginSuccessHandler;
 import com.example.seven.util.JWTUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +28,8 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler;
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    @Value("${HOSTNAME:localhost}")
+    private String hostname;
 
     public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
         this.authenticationConfiguration = authenticationConfiguration;
@@ -51,7 +54,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.addAllowedOrigin("http://localhost:3000"); // React/Next.js 포트 허용
+        config.addAllowedOrigin("*"); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
+//        config.addAllowedOrigin("http://%s:3000".formatted(hostname)); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);

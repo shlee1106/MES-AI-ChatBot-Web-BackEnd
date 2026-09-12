@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/JWTtestdb?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: admin        # 실제 MySQL 계정명
-    password: a@001338     # 실제 MySQL 비밀번호
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/JWTtestdb?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:admin}     # 실제 MySQL 계정명
+    password: ${MYSQL_PASSWORD:a@001338}     # 실제 MySQL 비밀번호
 
   jpa:
     hibernate:
@@ -18,14 +18,14 @@ spring:
   data:
     redis:
       # host: host.docker.internal
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   mail:
     host: smtp.gmail.com
     port: 587
-    username: #발신자 이메일
-    password: #이메일 앱 비밀번호 16자리
+    username: ${SMTP_EMAIL} #발신자 이메일
+    password: ${SMTP_PASSWD} #이메일 앱 비밀번호 16자리
     properties:
       mail:
         smtp:

@@ -25,7 +25,7 @@ public class EmailController {
     }
 
     @GetMapping("/verify")
-    public void verifyTokenAndRedirect(@RequestParam String token, HttpServletResponse response) throws IOException {
+    public boolean verifyTokenAndRedirect(@RequestParam String token, HttpServletResponse response) throws IOException {
         passwordResetService.verifyTokenExists(token);
 
         Cookie cookie = new Cookie("RESET_TOKEN",token);
@@ -34,8 +34,10 @@ public class EmailController {
         cookie.setMaxAge(300);
 
         response.addCookie(cookie);
-        response.sendRedirect("http://localhost:3000/reset-pw");
+//        response.sendRedirect("http://localhost:3000/reset-pw");
+        return true;
     }
+
 
     @PostMapping("/update")
     public ResponseEntity<String> updatePassword(

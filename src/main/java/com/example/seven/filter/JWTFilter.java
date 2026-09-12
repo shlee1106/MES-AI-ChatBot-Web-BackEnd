@@ -30,7 +30,9 @@ public class JWTFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         // 실제 로그인, 재발급 API 경로에 맞게 수정
-        return path.equals("/login") || path.equals("/refresh");
+        return path.equals("/api/v1/login")
+                || path.equals("/api/v1/jwt/refresh")
+                || path.equals("/api/v1/join");
     }
 
     @Override
@@ -84,14 +86,12 @@ public class JWTFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"토큰이 만료되었습니다.\"}");
-        } catch (Exception e) {
+        } catch (io.jsonwebtoken.JwtException e) {
+            // [수정] Exception 대신 JwtException으로 한정하여
+            // 토큰 파싱(서명 오류, 형식 오류 등) 문제일 때만 작동하게 합니다.
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"유효하지 않은 토큰입니다.\"}");
-        };
-
-
-
-
+        }
     }
 }

@@ -36,7 +36,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    // [수정] throws Exception 추가
+    // throws Exception 추가
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
@@ -51,7 +51,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.addAllowedOrigin("http://localhost:3000"); // React/Next.js 포트 허용
+        // TODO: 추후 배포 시 수정
+        config.setAllowedOriginPatterns(java.util.List.of("*")); // 모든 포트 허용(수정필요)
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);
@@ -75,29 +76,33 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(login -> login.disable());
 
+        // 권한 기반 계층 규칙 적용
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/join").permitAll()
-                        .requestMatchers("/api/v1/jwt/refresh").permitAll()
-                        .requestMatchers("/api/v1/login").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        // [추가] 비밀번호 재설정 관련 API 인증 없이 접근 허용
-                        .requestMatchers("/api/v1/password/**").permitAll()
 
-                        .requestMatchers("/api/v1/user").hasRole("USER")
-                        .anyRequest().hasRole("ADMIN")
+                        // 1. 인증 불필요 경로
+                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/").permitAll() //로그인, 로그아웃, refresh토큰인해 재발급, 최상위경로 접근 가능
+                        .requestMatchers("/api/v1/password/**").permitAll() // 비밀번호 수정 관련 접근 가능
+
+                        // 2. 계정 생성 API (최고관리자, 중간관리자 모두 허용)
+                        .requestMatchers("/api/v1/admin/users").hasAnyRole("MASTER", "MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+                        // admin/users 규칙이 admin/** 규칙보다 아래에 있으면 manager 접근 불가
+
+
+                        // 3. 권한별 접근 경로
+                        .requestMatchers("/api/v1/admin/**").hasRole("MASTER") //admin 경로는 MASTER 권한만 접근 가능
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MASTER", "MANAGER") //manager 경로는 MASTER, MANAGER만 접근 가능
+                        .requestMatchers("/api/v1/user/**").hasAnyRole("MASTER", "MANAGER", "USER") //user 경로엔 모두 다 접근 가능
+
+                        // 4. 나머지 요청은 로그인 필요
+                        .anyRequest().authenticated()
                 );
-
-        // JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
-        http
-                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
 
         // 필터 체인 설정 부분에 로그아웃 필터 추가
         http
                 .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), org.springframework.security.web.authentication.logout.LogoutFilter.class)
-                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
+                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
         http
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));

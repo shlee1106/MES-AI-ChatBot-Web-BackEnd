@@ -1,21 +1,19 @@
-# 프로젝트 소스 코드 컴파일 단계
+# Perform the extraction in a separate builder container
 FROM eclipse-temurin:25-alpine AS builder
-# 컨테이너임을 명시 (외부 의존성 테스트 건너뛰기)
-ENV CI=true
-# 작업 경로를 /builder로 설정 (cd /builder)
 WORKDIR /builder
 
-# 프로젝트를 컨테이너로 복사
-COPY . .
+# This points to the built jar file in the target folder
+# Adjust this to 'build/libs/*.jar' if you're using Gradle
+ARG JAR_FILE=build/libs/*.jar
 
-# 빌드 실행
-RUN ./gradlew build --no-daemon
-# jar 파일 추출
-RUN java -Djarmode=tools -jar build/libs/*SNAPSHOT.jar extract --layers --destination extracted
+# Copy the jar file to the working directory and rename it to application.jar
+COPY ${JAR_FILE} application.jar
 
-# 실행 단계
+# Extract the jar file using an efficient layout
+RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+
+# This is the runtime container
 FROM eclipse-temurin:25-alpine
-# 작업 경로를 /application으로 설정 (cd /application)
 WORKDIR /application
 
 # Copy the extracted jar contents from the builder container into the working directory in the runtime container

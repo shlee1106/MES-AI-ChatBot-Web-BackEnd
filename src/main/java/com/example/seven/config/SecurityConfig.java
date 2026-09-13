@@ -6,12 +6,12 @@ import com.example.seven.filter.JWTFilter;
 import com.example.seven.filter.LoginFilter;
 import com.example.seven.handler.LoginSuccessHandler;
 import com.example.seven.util.JWTUtil;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,8 +28,8 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler;
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
-    @Value("${HOSTNAME:localhost}")
-    private String hostname;
+//    @Value("${HOSTNAME:localhost}")
+//    private String hostname;
 
     public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, LoginSuccessHandler loginSuccessHandler, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
         this.authenticationConfiguration = authenticationConfiguration;
@@ -40,7 +40,7 @@ public class SecurityConfig {
 
     @Bean
     // [수정] throws Exception 추가
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
         return configuration.getAuthenticationManager();
     }
 
@@ -62,7 +62,7 @@ public class SecurityConfig {
 
         // [추가] 프론트엔드가 응답 헤더의 토큰을 읽을 수 있도록 허용
         config.addExposedHeader("Authorization");
-        
+
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -72,12 +72,12 @@ public class SecurityConfig {
 
     @Bean
     // [수정] throws Exception 추가
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .formLogin(login -> login.disable());
+                .formLogin(AbstractHttpConfigurer::disable);
 
         http
                 .authorizeHttpRequests(auth -> auth
@@ -88,6 +88,9 @@ public class SecurityConfig {
                         // [추가] 비밀번호 재설정 관련 API 인증 없이 접근 허용
                         .requestMatchers("/api/v1/password/**").permitAll()
 
+                        // 서버 상태 API 접근 허가
+                        .requestMatchers("/actuator/health").permitAll()
+
                         .requestMatchers("/api/v1/user").hasRole("USER")
                         .anyRequest().hasRole("ADMIN")
                 );
@@ -95,11 +98,13 @@ public class SecurityConfig {
         // JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
         http
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
+                             UsernamePasswordAuthenticationFilter.class);
 
         // 필터 체인 설정 부분에 로그아웃 필터 추가
         http
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository),
+                                 org.springframework.security.web.authentication.logout.LogoutFilter.class)
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         http

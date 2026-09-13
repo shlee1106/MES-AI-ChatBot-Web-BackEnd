@@ -1,6 +1,7 @@
 package com.example.seven.domain.user.service;
 
 import com.example.seven.domain.user.dto.JoinRequestDTO;
+import com.example.seven.domain.user.dto.UserInfoResponseDTO;
 import com.example.seven.domain.user.entity.UserEntity;
 import com.example.seven.domain.user.entity.UserRole;
 import com.example.seven.domain.user.repository.UserRepository;
@@ -53,7 +54,7 @@ public class UserService implements UserDetailsService {
         entity.setUsername(dto.username());
         entity.setEmail(dto.email());
         entity.setPassword(passwordEncoder.encode(dto.password()));
-        entity.setRole(dto.role() != null ? dto.role() : UserRole.ROLE_USER);
+        entity.setRole(dto.role());
 
         userRepository.save(entity);
     }
@@ -79,5 +80,26 @@ public class UserService implements UserDetailsService {
                 .password(entity.getPassword())
                 .roles(role) //.roles() 메서드 내부적으로 다시 ROLE_을 붙여줘 순수 이름만 넘김.
                 .build();
+    }
+
+    public UserInfoResponseDTO getMyInfo() {
+        // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
+        String subject = SecurityContextHolder.getContext().getAuthentication().getName();
+        String[] parts = subject.split("_");
+        Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
+        Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
+
+        // DB조회 없으면 예외처리
+        UserEntity user = userRepository.findByCompanyIdAndEmployeeId(companyId, employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // DTO 변환 후 반환
+        return new UserInfoResponseDTO(
+                user.getCompanyId(),
+                user.getEmployeeId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 }

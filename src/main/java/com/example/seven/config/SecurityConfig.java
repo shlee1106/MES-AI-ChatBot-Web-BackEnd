@@ -8,6 +8,8 @@ import com.example.seven.handler.LoginSuccessHandler;
 import com.example.seven.util.JWTUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -67,6 +69,16 @@ public class SecurityConfig {
         return source;
     }
 
+
+    // 권한별 서열 정의
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("""
+                ROLE_MASTER > ROLE_MANAGER
+                ROLE_MANAGER > ROLE_USER
+                """);
+    }
+
     @Bean
     // [수정] throws Exception 추가
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -85,14 +97,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/password/**").permitAll() // 비밀번호 수정 관련 접근 가능
 
                         // 2. 계정 생성 API (최고관리자, 중간관리자 모두 허용)
-                        .requestMatchers("/api/v1/admin/users").hasAnyRole("MASTER", "MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
-                        // admin/users 규칙이 admin/** 규칙보다 아래에 있으면 manager 접근 불가
+                        // 최소 요구 권한을 MANAGER로 설정 (서열에 의해 MASTER도 자동 통과)
+                        .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+
 
 
                         // 3. 권한별 접근 경로
                         .requestMatchers("/api/v1/admin/**").hasRole("MASTER") //admin 경로는 MASTER 권한만 접근 가능
-                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MASTER", "MANAGER") //manager 경로는 MASTER, MANAGER만 접근 가능
-                        .requestMatchers("/api/v1/user/**").hasAnyRole("MASTER", "MANAGER", "USER") //user 경로엔 모두 다 접근 가능
+                        .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") //manager 경로는 MASTER, MANAGER만 접근 가능
+                        .requestMatchers("/api/v1/user/**").hasRole("USER") //user 경로엔 모두 다 접근 가능
 
                         // 4. 나머지 요청은 로그인 필요
                         .anyRequest().authenticated()

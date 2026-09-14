@@ -99,7 +99,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // 1. 인증 불필요 경로
-                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/")
+                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/",
+                                         "/actuator/health")
                         .permitAll() //로그인, 로그아웃, refresh토큰인해 재발급, 최상위경로 접근 가능
                         .requestMatchers("/api/v1/password/**").authenticated() // 비밀번호 수정 관련 접근 가능
 

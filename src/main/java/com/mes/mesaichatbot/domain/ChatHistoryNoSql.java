@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 @Getter
 public class ChatHistoryNoSql {
     @Id
-    private String id;
+    private int companyId;
+    private int employeeId;
     private String chatroomId;
     private String message;
     private LocalDateTime recordedAt;

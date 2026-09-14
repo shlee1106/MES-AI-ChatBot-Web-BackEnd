@@ -13,18 +13,23 @@ public class SampleController {
     @GetMapping("/")
     public String index() {
 
-        return "index";
+        return "기본 페이지(누구나 접근 가능)";
     }
 
     @GetMapping("/user")
     public String user() {
-        System.out.println(SecurityContextHolder.getContext().getAuthentication().getName());
-        return "user";
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return "접속자 : " + username + " - 일반사원(USER)이상 접근 가능한 페이지.";
     }
 
-    @GetMapping("admin")
-    public String admin() {
+    @GetMapping("/manager")
+    public String manager() {
 
-        return "admin";
+        return "중간관리자(MANAGER) 이상 접근 가능한 페이지.";
+    }
+
+    @GetMapping("/admin")
+    public String admin() {
+        return "최고관리자(MASTER) 전용 페이지.";
     }
 }

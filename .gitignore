@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Build and Output directories
+/build/
+/out/
+.gradle/
+.idea/
+*.iml

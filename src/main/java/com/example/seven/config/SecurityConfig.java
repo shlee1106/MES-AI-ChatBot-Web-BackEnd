@@ -8,6 +8,8 @@ import com.example.seven.handler.LoginSuccessHandler;
 import com.example.seven.util.JWTUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -56,6 +58,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
+        // TODO: 추후 배포 시 수정
         config.setAllowedOriginPatterns(List.of("*")); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
 //        config.addAllowedOrigin("http://%s:3000".formatted(hostname)); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
         config.addAllowedMethod("*");
@@ -72,6 +75,16 @@ public class SecurityConfig {
         return source;
     }
 
+
+    // 권한별 서열 정의
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("""
+                ROLE_MASTER > ROLE_MANAGER
+                ROLE_MANAGER > ROLE_USER
+                """);
+    }
+
     @Bean
     // [수정] throws Exception 추가
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -81,34 +94,34 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(AbstractHttpConfigurer::disable);
 
+        // 권한 기반 계층 규칙 적용
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/join").permitAll()
-                        .requestMatchers("/api/v1/jwt/refresh").permitAll()
-                        .requestMatchers("/api/v1/login").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        // [추가] 비밀번호 재설정 관련 API 인증 없이 접근 허용
-                        .requestMatchers("/api/v1/password/**").permitAll()
 
-                        // 서버 상태 API 접근 허가
-                        .requestMatchers("/actuator/health").permitAll()
+                        // 1. 인증 불필요 경로
+                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/").permitAll() //로그인, 로그아웃, refresh토큰인해 재발급, 최상위경로 접근 가능
+                        .requestMatchers("/api/v1/password/**").permitAll() // 비밀번호 수정 관련 접근 가능
 
-                        .requestMatchers("/api/v1/user").hasRole("USER")
-                        .anyRequest().hasRole("ADMIN")
+                        // 2. 계정 생성 API (최고관리자, 중간관리자 모두 허용)
+                        // 최소 요구 권한을 MANAGER로 설정 (서열에 의해 MASTER도 자동 통과)
+                        .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+
+
+
+                        // 3. 권한별 접근 경로
+                        .requestMatchers("/api/v1/admin/**").hasRole("MASTER") //admin 경로는 MASTER 권한만 접근 가능
+                        .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") //manager 경로는 MASTER, MANAGER만 접근 가능
+                        .requestMatchers("/api/v1/user/**").hasRole("USER") //user 경로엔 모두 다 접근 가능
+
+                        // 4. 나머지 요청은 로그인 필요
+                        .anyRequest().authenticated()
                 );
-
-        // JWTFilter를 LoginFilter보다 앞단(Before)으로 배치
-        http
-                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
-                             UsernamePasswordAuthenticationFilter.class);
 
         // 필터 체인 설정 부분에 로그아웃 필터 추가
         http
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository),
-                                 org.springframework.security.web.authentication.logout.LogoutFilter.class)
-                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
         http
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));

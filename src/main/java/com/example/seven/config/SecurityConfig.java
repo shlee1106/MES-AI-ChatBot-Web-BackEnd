@@ -80,9 +80,9 @@ public class SecurityConfig {
     @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""
-                ROLE_MASTER > ROLE_MANAGER
-                ROLE_MANAGER > ROLE_USER
-                """);
+                                                       ROLE_MASTER > ROLE_MANAGER
+                                                       ROLE_MANAGER > ROLE_USER
+                                                       """);
     }
 
     @Bean
@@ -99,13 +99,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // 1. 인증 불필요 경로
-                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/").permitAll() //로그인, 로그아웃, refresh토큰인해 재발급, 최상위경로 접근 가능
-                        .requestMatchers("/api/v1/password/**").permitAll() // 비밀번호 수정 관련 접근 가능
+                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/")
+                        .permitAll() //로그인, 로그아웃, refresh토큰인해 재발급, 최상위경로 접근 가능
+                        .requestMatchers("/api/v1/password/**").authenticated() // 비밀번호 수정 관련 접근 가능
 
                         // 2. 계정 생성 API (최고관리자, 중간관리자 모두 허용)
                         // 최소 요구 권한을 MANAGER로 설정 (서열에 의해 MASTER도 자동 통과)
-                        .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
-
+                        .requestMatchers("/api/v1/admin/users")
+                        .hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
 
 
                         // 3. 권한별 접근 경로
@@ -119,9 +120,11 @@ public class SecurityConfig {
 
         // 필터 체인 설정 부분에 로그아웃 필터 추가
         http
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository),
+                                 org.springframework.security.web.authentication.logout.LogoutFilter.class)
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
+                             UsernamePasswordAuthenticationFilter.class);
         http
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));

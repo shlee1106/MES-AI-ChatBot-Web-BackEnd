@@ -81,7 +81,11 @@ public class FileController {
         }
 
         // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성
-        fileMetadataRepository.save(originalFile);
+        try{
+            fileMetadataRepository.save(originalFile);
+        }catch (Exception e){
+            log.error("파일 메타데이터 DB전송 실패");
+        }
 
 
         // 업로드된 문서를 MongoDB에 저장.

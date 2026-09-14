@@ -37,3 +37,8 @@ jwt:
   secret: hello-my-name-is-dev-yummi-im-korean-web-dev-and-youtuber
   access-token-expire-time: 600000
   refresh-token-expire-time: 2592000000
+
+management:
+  health:
+    mail:
+      enabled: false

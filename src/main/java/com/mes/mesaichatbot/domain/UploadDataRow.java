@@ -22,7 +22,7 @@ public class UploadDataRow {
     private Company companyId;
     @JoinColumn(name = "file_id", nullable = false)
     @ManyToOne
-    private OriginalFile fileId;
+    private FileMetadata fileId;
     @Column(name = "`row_number`", nullable = false)
     private int rowNumber;
     @Column(name = "row_data", nullable = false, columnDefinition = "json")

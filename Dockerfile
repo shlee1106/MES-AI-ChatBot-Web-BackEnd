@@ -1,5 +1,5 @@
 # Perform the extraction in a separate builder container
-FROM eclipse-temurin:25-alpine AS builder
+FROM --platform=linux/amd64 eclipse-temurin:25-alpine AS builder
 WORKDIR /builder
 
 # This points to the built jar file in the target folder
@@ -13,7 +13,7 @@ COPY ${JAR_FILE} application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # This is the runtime container
-FROM eclipse-temurin:25-alpine
+FROM --platform=linux/amd64 eclipse-temurin:25-alpine
 WORKDIR /application
 
 # Copy the extracted jar contents from the builder container into the working directory in the runtime container

@@ -1,12 +1,12 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.domain.Company;
-import com.mes.mesaichatbot.domain.OriginalFile;
+import com.mes.mesaichatbot.domain.FileMetadata;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
-import com.mes.mesaichatbot.repository.OriginalFileRepository;
+import com.mes.mesaichatbot.repository.FileMetadataRepository;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -40,14 +39,14 @@ public class FileController {
     private final DocumentService documentService;
     private final VectorStore vectorStore;
     private final LlmChunkingService llmChunkingService;
-    private final OriginalFileRepository originalFileRepository;
+    private final FileMetadataRepository fileMetadataRepository;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, OriginalFileRepository originalFileRepository) {
+    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, FileMetadataRepository fileMetadataRepository) {
         this.documentService = documentService;
         this.vectorStore = vectorStore;
         this.llmChunkingService = llmChunkingService;
-        this.originalFileRepository = originalFileRepository;
+        this.fileMetadataRepository = fileMetadataRepository;
     }
 
     /**
@@ -68,7 +67,7 @@ public class FileController {
         LocalDateTime now = LocalDateTime.now();
 
         // DB에 삽입할 새 행 생성.
-        OriginalFile originalFile = new OriginalFile(fileId.toString(), company, employee, file.getOriginalFilename(), fileType, now);
+        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, employee, file.getOriginalFilename(), fileType, now);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;
@@ -81,8 +80,8 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
 
-        // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성(테스트 미실시)
-        originalFileRepository.save(originalFile);
+        // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성
+        fileMetadataRepository.save(originalFile);
 
 
         // 업로드된 문서를 MongoDB에 저장.

@@ -18,6 +18,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.mes.mesaichatbot.repository.ChatHistoryNoSqlRepository;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -25,7 +26,7 @@ import java.util.*;
 
 @Slf4j
 @RestController("/chat")
-public class ChatController {
+public class  ChatController {
     /**
      * LLM의 시스템 프롬프트.
      */
@@ -155,15 +156,20 @@ public class ChatController {
     private final ChatClient chatClient;
     private final VectorStore vectorStore;
     private final LlmChatHistoryService chatHistoryService;
+    private final ChatHistoryNoSqlRepository chatHistoryNoSqlRepository;
 
     private final SecureRandom rng = new SecureRandom();
 
-    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService) {
+    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService,ChatHistoryNoSqlRepository chatHistoryNoSqlRepository) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
+        this.chatHistoryNoSqlRepository = chatHistoryNoSqlRepository;
     }
 
+    // TODO: DB 연동 전 임시 테스트용 ID (실제 개발 시 제거 예정)
+    private static final Integer TEMP_COMPANY_ID = 1;
+    private static final Integer TEMP_EMPLOYEE_ID = 2;
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
@@ -240,10 +246,21 @@ public class ChatController {
         messages.add(UserMessage.builder().text(formattedQuestion).build());
         messages.add(AssistantMessage.builder().content(llmAnswer).build());
 
-        // 결과를 조립
-        ChatHistoryNoSql chatResult = new ChatHistoryNoSql(UUID.randomUUID().toString(), sessionId, llmAnswer, LocalDateTime.now(), "assistant");
+        // Ai 답변 결과를 조립
+        // TODO: DB 연동 전 임시 테스트용 ID
+        ChatHistoryNoSql chatResult = new ChatHistoryNoSql(TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, sessionId, llmAnswer, LocalDateTime.now(), "assistant");
 
-        // TODO: 대화 내역 DB에 저장
+        // 유저 질문 결과 조립
+        ChatHistoryNoSql userHistory = new ChatHistoryNoSql(TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, sessionId, userQuestion.message(), LocalDateTime.now(), "user");
+
+        // 대화내역 MongoDB저장 (테스트필요)
+        try {
+            chatHistoryNoSqlRepository.save(userHistory);
+            chatHistoryNoSqlRepository.save(chatResult);
+        } catch (Exception e) {
+            log.error("MongoDB 대화 내역 저장 실패");
+        }
+
 
         // 성공 시 답변 객체 반환
         return ResponseEntity.ok().body(chatResult);

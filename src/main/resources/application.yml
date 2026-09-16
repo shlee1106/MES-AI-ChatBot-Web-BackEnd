@@ -34,7 +34,7 @@ spring:
 
 # jwt는 spring과 같은 라인(제일 왼쪽)에 있어야 합니다.
 jwt:
-  secret: hello-my-name-is-dev-yummi-im-korean-web-dev-and-youtuber
+  secret: z8$Vq3*B!yE(G+KbPeShVmYq3t6w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G-Seven!
   access-token-expire-time: 600000
   refresh-token-expire-time: 2592000000
 

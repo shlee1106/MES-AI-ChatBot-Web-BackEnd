@@ -44,7 +44,7 @@ public class PasswordResetService {
         message.setTo(user.getEmail());
         //TODO: 외부IP 자동으로 할당
         message.setSubject("[MES AI ChatBot 안내] 비밀번호 재설정 링크 이메일");
-        message.setText("비밀번호 재설정 링크: http://43.200.89.191:8080/api/v1/password/verify?token=" + token +
+        message.setText("비밀번호 재설정 링크: https://43.200.89.191:8080/api/v1/password/verify?token=" + token +
                 "\n\n(보안을 위해 본 링크는 5분 후 만료됩니다.)");
         mailSender.send(message);
     }

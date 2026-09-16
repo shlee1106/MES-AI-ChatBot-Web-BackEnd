@@ -1,6 +1,7 @@
 package com.example.seven.api;
 
 import com.example.seven.domain.jwt.service.RefreshService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,13 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class JWTController {
 
     private final RefreshService refreshService;
-
-    public JWTController(RefreshService refreshService) {
-        this.refreshService = refreshService;
-    }
 
     @PostMapping("/jwt/refresh")
     public ResponseEntity<?> refresh(

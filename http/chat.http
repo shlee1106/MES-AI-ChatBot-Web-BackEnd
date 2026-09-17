@@ -21,7 +21,7 @@ Content-Type: application/json
 Authorization: sans
 
 {
-  "message": "비가 너무 많이 와서 결근하려고 해. 가능할까?"
+  "message": "치킨이 먹고 싶어. 결근해도 돼?"
 }
 
 ### 이어서 질문

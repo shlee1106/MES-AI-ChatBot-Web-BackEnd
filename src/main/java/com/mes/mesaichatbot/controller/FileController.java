@@ -6,7 +6,9 @@ import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
+import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.FileMetadataRepository;
+import com.mes.mesaichatbot.repository.UserMemberRepository;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
@@ -40,13 +42,17 @@ public class FileController {
     private final VectorStore vectorStore;
     private final LlmChunkingService llmChunkingService;
     private final FileMetadataRepository fileMetadataRepository;
+    private final CompanyRepository companyRepository;
+    private final UserMemberRepository userMemberRepository;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, FileMetadataRepository fileMetadataRepository) {
+    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, FileMetadataRepository fileMetadataRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository) {
         this.documentService = documentService;
         this.vectorStore = vectorStore;
         this.llmChunkingService = llmChunkingService;
         this.fileMetadataRepository = fileMetadataRepository;
+        this.companyRepository = companyRepository;
+        this.userMemberRepository = userMemberRepository;
     }
 
     /**
@@ -59,8 +65,8 @@ public class FileController {
     public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) { // TODO: 인증 시스템 연동 시 required = true로 설정 혹은 지우기.
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
-        Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
-        UserMember employee = new UserMember(); // TODO: 인증 시스템 연동 시 사원정보 입력
+        Company company = companyRepository.findByCompanyId(0); // TODO: 인증 시스템 연동 시 회사정보 입력
+        UserMember employee = userMemberRepository.findByCompanyId(0); // TODO: 인증 시스템 연동 시 사원정보 입력
         //메타데이터 전송을 위해 밑에 데이터를 추출하기위한 변수 2개 추가생성
         String originName = file.getOriginalFilename();
         String fileType = StringUtils.getFilenameExtension(originName);
@@ -84,6 +90,7 @@ public class FileController {
         try{
             fileMetadataRepository.save(originalFile);
         }catch (Exception e){
+            log.error(String.valueOf(e));
             log.error("파일 메타데이터 DB전송 실패");
         }
 

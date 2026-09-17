@@ -1,17 +1,19 @@
 package com.mes.mesaichatbot.domain;
 
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.redis.core.RedisHash;
 
 import java.time.LocalDateTime;
 
-@RedisHash("chat_histories_nosql")
+@Entity
+@Table(name = "chat_histories")
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ChatHistoryNoSql {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String chatId;
     private int companyId;
     private int employeeId;
     private String chatroomId;

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;

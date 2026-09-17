@@ -7,6 +7,8 @@ import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.llm.service.LlmChatHistoryService;
+import com.mes.mesaichatbot.repository.CompanyRepository;
+import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -159,17 +161,21 @@ public class  ChatController {
     private final ChatHistoryNoSqlRepository chatHistoryNoSqlRepository;
 
     private final SecureRandom rng = new SecureRandom();
+    private final CompanyRepository companyRepository;
+    private final UserMemberRepository userMemberRepository;
 
-    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService,ChatHistoryNoSqlRepository chatHistoryNoSqlRepository) {
+    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryNoSqlRepository chatHistoryNoSqlRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
         this.chatHistoryNoSqlRepository = chatHistoryNoSqlRepository;
+        this.companyRepository = companyRepository;
+        this.userMemberRepository = userMemberRepository;
     }
 
     // TODO: DB 연동 전 임시 테스트용 ID (실제 개발 시 제거 예정)
-    private static final Integer TEMP_COMPANY_ID = 1;
-    private static final Integer TEMP_EMPLOYEE_ID = 2;
+    private static final Integer TEMP_COMPANY_ID = 0;
+    private static final Integer TEMP_EMPLOYEE_ID = 0;
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
@@ -248,10 +254,10 @@ public class  ChatController {
 
         // Ai 답변 결과를 조립
         // TODO: DB 연동 전 임시 테스트용 ID
-        ChatHistoryNoSql chatResult = new ChatHistoryNoSql(TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, sessionId, llmAnswer, LocalDateTime.now(), "assistant");
+        ChatHistoryNoSql chatResult = new ChatHistoryNoSql(null,TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, sessionId, llmAnswer, LocalDateTime.now(), "assistant");
 
         // 유저 질문 결과 조립
-        ChatHistoryNoSql userHistory = new ChatHistoryNoSql(TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, sessionId, userQuestion.message(), LocalDateTime.now(), "user");
+        ChatHistoryNoSql userHistory = new ChatHistoryNoSql(null,TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, sessionId, userQuestion.message(), LocalDateTime.now(), "user");
 
         // 대화내역 MongoDB저장 (테스트필요)
         try {
@@ -280,8 +286,8 @@ public class  ChatController {
         // TODO: JWT 검증 과정 추가
         UUID sessionUuid = UUID.randomUUID();
         // TODO: 회사 정보와 사용자 정보 얻어오기
-        Company company = new Company();
-        UserMember employee = new UserMember();
+        Company company = companyRepository.findByCompanyId(0);
+        UserMember employee = userMemberRepository.findByCompanyId(0);
 
         // Title이 있으면 그대로 사용, 아니면 무작위 단어 3개 배합
         String title = chatSessionRequest.title() != null ? chatSessionRequest.title() : "%s-%s-%s".formatted(WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)]);

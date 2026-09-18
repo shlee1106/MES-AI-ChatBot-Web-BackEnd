@@ -1,12 +1,13 @@
 package com.mes.mesaichatbot.llm.controller;
 
-import com.mes.mesaichatbot.domain.ChatHistoryNoSql;
+import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
 import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.llm.service.LlmChatHistoryService;
+import com.mes.mesaichatbot.repository.ChatSessionRepository;
 import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.mes.mesaichatbot.repository.ChatHistoryNoSqlRepository;
+import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -158,24 +159,26 @@ public class  ChatController {
     private final ChatClient chatClient;
     private final VectorStore vectorStore;
     private final LlmChatHistoryService chatHistoryService;
-    private final ChatHistoryNoSqlRepository chatHistoryNoSqlRepository;
+    private final ChatHistoryRepository chatHistoryRepository;
 
     private final SecureRandom rng = new SecureRandom();
     private final CompanyRepository companyRepository;
     private final UserMemberRepository userMemberRepository;
+    private final ChatSessionRepository chatSessionRepository;
 
-    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryNoSqlRepository chatHistoryNoSqlRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository) {
+    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository, ChatSessionRepository chatSessionRepository) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
-        this.chatHistoryNoSqlRepository = chatHistoryNoSqlRepository;
+        this.chatHistoryRepository = chatHistoryRepository;
         this.companyRepository = companyRepository;
         this.userMemberRepository = userMemberRepository;
+        this.chatSessionRepository = chatSessionRepository;
     }
 
     // TODO: DB 연동 전 임시 테스트용 ID (실제 개발 시 제거 예정)
-    private static final Integer TEMP_COMPANY_ID = 0;
-    private static final Integer TEMP_EMPLOYEE_ID = 0;
+    private static final Company TEMP_COMPANY_ID = new Company(0,"", LocalDateTime.now());
+    private static final UserMember TEMP_EMPLOYEE_ID = new UserMember();
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
@@ -183,10 +186,10 @@ public class  ChatController {
      * @param authorization JWT Access Token.
      * @param sessionId     대화 세션 ID.
      * @param userQuestion  사용자의 질문. ({@link UserQuestionDto})
-     * @return {@link ChatHistoryNoSql}
+     * @return {@link ChatHistory}
      */
     @PostMapping(value = "/chat/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ChatHistoryNoSql> askToLlm(
+    public ResponseEntity<ChatHistory> askToLlm(
 //            @RequestParam(name = "file", required = false) MultipartFile file,
             @RequestHeader(name = "Authorization") String authorization,
             @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion
@@ -254,15 +257,16 @@ public class  ChatController {
 
         // Ai 답변 결과를 조립
         // TODO: DB 연동 전 임시 테스트용 ID
-        ChatHistoryNoSql chatResult = new ChatHistoryNoSql(null,TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, sessionId, llmAnswer, LocalDateTime.now(), "assistant");
+        ChatSession session = chatSessionRepository.findBySessionId(sessionId);
+        ChatHistory chatResult = new ChatHistory(null,TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, session, llmAnswer, LocalDateTime.now(), "assistant");
 
         // 유저 질문 결과 조립
-        ChatHistoryNoSql userHistory = new ChatHistoryNoSql(null,TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, sessionId, userQuestion.message(), LocalDateTime.now(), "user");
+        ChatHistory userHistory = new ChatHistory(null,TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, session, userQuestion.message(), LocalDateTime.now(), "user");
 
         // 대화내역 MongoDB저장 (테스트필요)
         try {
-            chatHistoryNoSqlRepository.save(userHistory);
-            chatHistoryNoSqlRepository.save(chatResult);
+            chatHistoryRepository.save(userHistory);
+            chatHistoryRepository.save(chatResult);
         } catch (Exception e) {
             log.error("MongoDB 대화 내역 저장 실패");
         }
@@ -295,6 +299,10 @@ public class  ChatController {
         // 대화 내역 Map에 새로 등록
         chatHistoryService.getChatHistories().put(sessionUuid, new ArrayList<>());
 
-        return ResponseEntity.ok().body(new ChatSession(sessionUuid.toString(), company, employee, title, LocalDateTime.now()));
+        ChatSession chatSession = new ChatSession(sessionUuid.toString(), company, employee, title, LocalDateTime.now());
+
+        chatSessionRepository.save(chatSession);
+
+        return ResponseEntity.ok().body(chatSession);
     }
 }

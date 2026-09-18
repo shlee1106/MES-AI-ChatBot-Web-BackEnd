@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.llm.service;
 
-import com.mes.mesaichatbot.domain.ChatHistoryNoSql;
-import com.mes.mesaichatbot.repository.ChatHistoryNoSqlRepository;
+import com.mes.mesaichatbot.domain.ChatHistory;
+import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.*;
 public class LlmChatHistoryService {
 
     //인터페이스 메소드 사용을 위한 객체생성
-    private final ChatHistoryNoSqlRepository chatHistoryNoSqlRepository;
+    private final ChatHistoryRepository chatHistoryRepository;
     /**
      * 대화 내역을 UUID로 구분하여 저장하는 변수
      */
@@ -38,21 +38,21 @@ public class LlmChatHistoryService {
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
         // DB에서 대화 내역을 전부 꺼냄
-        Iterable<ChatHistoryNoSql> rows = chatHistoryNoSqlRepository.findAll();
+        Iterable<ChatHistory> rows = chatHistoryRepository.findAll();
             // 각 행 순회
-            for (ChatHistoryNoSql chatHistoryNoSql : rows) {
+            for (ChatHistory chatHistory : rows) {
                     // 각 행의 대화방 ID UUID로 파싱
-                    UUID chatId = UUID.fromString(chatHistoryNoSql.getChatroomId());
+                    UUID chatId = UUID.fromString(chatHistory.getSessionId().getSessionId());
                     // 메시지를 담을 공간 생성
                     Message message;
 
                     // 대화 주체가 사용자면
-                    if (chatHistoryNoSql.getRole().equals("user")) {
+                    if (chatHistory.getRole().equals("user")) {
                         // UserMessage 형태로 생성 후 대입
-                        message = UserMessage.builder().text(chatHistoryNoSql.getMessage()).build();
+                        message = UserMessage.builder().text(chatHistory.getMessage()).build();
                     } else {
                         // 아니면 AssistantMessage 형태로 생성 후 대입
-                        message = AssistantMessage.builder().content(chatHistoryNoSql.getMessage()).build();
+                        message = AssistantMessage.builder().content(chatHistory.getMessage()).build();
                     }
 
                     // 해당 대화방이 전에 삽입되었다면

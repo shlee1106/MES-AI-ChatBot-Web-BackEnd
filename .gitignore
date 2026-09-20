@@ -38,3 +38,10 @@ out/
 
 # Ignore macOS metadata file
 .DS_Store
+
+# Build and Output directories
+/build/
+/out/
+.gradle/
+.idea/
+*.iml

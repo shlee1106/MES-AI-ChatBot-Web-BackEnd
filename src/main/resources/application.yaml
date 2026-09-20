@@ -2,12 +2,6 @@ spring:
   config:
     import:
       - optional:classpath:application-secrets.yaml
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        show_sql: true
   ai:
     vectorstore:
       mongodb:
@@ -20,21 +14,54 @@ spring:
         model:
           ${EMBEDDING_MODEL:embeddinggemma:latest}
       base-url: http://${OLLAMA_HOST:localhost}:11434
+      init:
+        pull-model-strategy: when_missing
   application:
     name: MESAIChatBotWebBackEnd
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/${DATABASE_NAME:mes}
   mongodb:
     database: ${DATABASE_NAME:mes}
     authentication-database: admin
     host: ${MONGODB_HOST:localhost}
     port: 27017
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: 6379
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:JWTtestdb}?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:admin}        # 실제 MySQL 계정명
+    password: ${MYSQL_PASSWORD:a@001338}     # 실제 MySQL 비밀번호
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      # host: host.docker.internal
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME} #발신자 이메일
+    password: ${SMTP_PASSWORD} #이메일 앱 비밀번호 16자리
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+jwt:
+  secret: z8$Vq3*B!yE(G+KbPeShVmYq3t6w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G-Seven!
+  access-token-expire-time: 600000
+  refresh-token-expire-time: 2592000000
+management:
+  health:
+    mail:
+      enabled: false

@@ -14,8 +14,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.filter.GenericFilterBean;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * 프론트엔드에서 로그아웃(POST /api/v1/logout)을 요청했을 때 이를 가로채서 처리하는 전용 필터
@@ -26,6 +28,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -49,18 +52,17 @@ public class CustomLogoutFilter extends GenericFilterBean {
             return;
         }
 
-        // [쿠키 수색] 프론트엔드 브라우저가 보낸 쿠키 목록을 뒤져서 "Refresh-Token"을 찾아냄
+        //  [refreshToken 찾기] JSON 바디에 refreshToken 키와 대칭 중인 value값 찾기
         String refresh = null;
-        Cookie[] cookies = request.getCookies();
-        if(cookies != null) {
-            for(Cookie cookie : cookies) {
-                if(cookie.getName().equals("Refresh-Token")) {
-                    refresh = cookie.getValue();
-                }
-            }
+
+        try {
+            Map<String, String> bodyMap = objectMapper.readValue(request.getInputStream(), Map.class);
+            refresh = bodyMap.get("refreshToken");
+        } catch (Exception e){
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        // 애초에 쿠키에 RefreshToken이 없다면 로그아웃할 것도 없으므로 400 에러 반환
+        // 애초에 RefreshToken이 없다면 로그아웃할 것도 없으므로 400 에러 반환
         if(refresh == null) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -78,8 +80,8 @@ public class CustomLogoutFilter extends GenericFilterBean {
                 return;
             }
         } catch (ExpiredJwtException e) {
-          // [핵심] 토큰의 기한이 이미 만료되었더라도 튕겨내면 안됨
-          // 목표는 완벽한 로그아웃(잔여 쿠키 삭제)이므로 에러를 무시하고 아래 로직으로 통과
+          // [핵심] 토큰의 기한이 이미 만료되었더라도 DB에서 지워야 하므로 통과
+
         } catch (Exception e) {
             // 서명이 조작된 토큰이라면 400에러 반환
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -94,15 +96,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
             refreshRepository.deleteById(refresh);
         }
 
-        // [브라우저 쿠키 삭제] 프론트엔드 브라우저에 남아있는 쿠키를 완전히 삭제
-        // 방법으론 동일한 이름("Refresh-Token")의 쿠키를 새로 만들되, 수명을 0초로 설정해 덮어씀
-        Cookie cookie = new Cookie("Refresh-Token", null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/"); // 쿠키를 구웠을 때와 똑같은 경로로 지정해야 브라우저가 정확히 지움
-        cookie.setHttpOnly(true); //HttpOnly 옵션 유지 (보안 규격 맞춤)
-
-        // 0초짜리 소멸용 쿠키를 응답에 담아 프론트엔드로 보내고, 성공(200) 상태 코드 반환
-        response.addCookie(cookie);
+        //[종료] 위 단계 검증이 끝날 시 Redis에 저장된 refreshToken 완전히 삭제 성공
         response.setStatus(HttpServletResponse.SC_OK);
     }
 }

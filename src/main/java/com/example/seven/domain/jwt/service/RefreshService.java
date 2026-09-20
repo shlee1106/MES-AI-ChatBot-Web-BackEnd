@@ -3,8 +3,10 @@ package com.example.seven.domain.jwt.service;
 import com.example.seven.domain.jwt.repository.RefreshRepository;
 import com.example.seven.util.JWTUtil;
 import io.jsonwebtoken.Claims;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class RefreshService {
 
@@ -23,7 +25,9 @@ public class RefreshService {
         try{
             claims = jwtUtil.getClaims(refreshToken);
         } catch (Exception e) {
+            log.error(String.valueOf(e));
             throw new IllegalArgumentException("유효하지 않은 Refresh Token입니다.");
+
         }
 
         String tokenType = claims.get("tokenType", String.class);

@@ -23,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -125,11 +126,11 @@ public class SecurityConfig {
                         // 1. 프리패스 구역
                         // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
                         .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/",
-                                         "/actuator/health")
+                                         "/actuator/health", "/api/v1/password/**")
                         .permitAll()
 
                         // 비밀번호 변경 기능은 로그인 한사람 모두 접근 가능 (해당 비밀번호 변경 기능 개발자가 변경해줄지 유저가 직접 변경할지 의논진행예정)
-                        .requestMatchers("/api/v1/password/**").authenticated()
+                        //.requestMatchers("/api/v1/password/**").authenticated()
 
                         // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
                         // 서열에 의해 MASTER도 자동 통과
@@ -149,7 +150,7 @@ public class SecurityConfig {
         // 필터 배치 순서 설정(매우중요)
         http
                 // 기존 로그아웃 필터가 작동하기 전, 내가 만든 CustomLogoutFilter(쿠키 삭제 등) 먼저 실행
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository),
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository,new ObjectMapper()),
                                  org.springframework.security.web.authentication.logout.LogoutFilter.class)
 
                 // 기본 아이디,비번 검사 필터 앞에, 내가 만든 JWTFilter(토큰 검사기) 먼저 배치(모든 요청에서 토큰 부터 검사)

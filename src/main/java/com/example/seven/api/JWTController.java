@@ -1,14 +1,13 @@
 package com.example.seven.api;
 
+import com.example.seven.domain.jwt.dto.RefreshRequestDTO;
 import com.example.seven.domain.jwt.service.RefreshService;
+import com.example.seven.handler.LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -19,17 +18,16 @@ public class JWTController {
 
     @PostMapping("/jwt/refresh")
     public ResponseEntity<?> refresh(
-            // 1. 바디가 아닌 HttpOnly 쿠키에서 Refresh-Token을 바로 꺼냄.
-            @CookieValue(name = "Refresh-Token", required = false) String refreshToken
+            @RequestBody RefreshRequestDTO request
     ) {
-        // 2. 쿠키가 비어있으면 401(권한 없음) 에러를 반환합니다.
-        if (refreshToken == null) {
+
+        if (request == null) {
             return new ResponseEntity<>("Refresh Token이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED);
         }
 
         try {
             // 3. 기존에 만들어둔 RefreshService를 그대로 활용하여 새 토큰을 발급.
-            String newAccessToken = refreshService.refresh(refreshToken);
+            String newAccessToken = refreshService.refresh(request.refreshToken());
 
             // 4. 프론트엔드의 인터셉터가 읽을 수 있도록 응답 헤더에 새 토큰을 꽂아줌.
             return ResponseEntity.ok()

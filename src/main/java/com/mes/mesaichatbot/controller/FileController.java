@@ -1,13 +1,19 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.domain.Company;
+import com.mes.mesaichatbot.domain.FileMetadata;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
-import com.mes.mesaichatbot.dto.OriginalFileDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
+import com.mes.mesaichatbot.llm.service.LlmChunkingService;
+import com.mes.mesaichatbot.repository.CompanyRepository;
+import com.mes.mesaichatbot.repository.FileMetadataRepository;
+import com.mes.mesaichatbot.repository.UserMemberRepository;
 import com.mes.mesaichatbot.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -19,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
@@ -30,10 +35,20 @@ public class FileController {
      * 문서 파싱 Service.
      */
     private final DocumentService documentService;
+    private final VectorStore vectorStore;
+    private final LlmChunkingService llmChunkingService;
+    private final FileMetadataRepository fileMetadataRepository;
+    private final CompanyRepository companyRepository;
+    private final UserMemberRepository userMemberRepository;
 
     // 자동 주입.
-    public FileController(DocumentService documentService) {
+    public FileController(DocumentService documentService, MongoDBAtlasVectorStore vectorStore, LlmChunkingService llmChunkingService, FileMetadataRepository fileMetadataRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository) {
         this.documentService = documentService;
+        this.vectorStore = vectorStore;
+        this.llmChunkingService = llmChunkingService;
+        this.fileMetadataRepository = fileMetadataRepository;
+        this.companyRepository = companyRepository;
+        this.userMemberRepository = userMemberRepository;
     }
 
     /**
@@ -46,12 +61,15 @@ public class FileController {
     public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file, @RequestHeader(name = "Authorization", required = false) String authorization) { // TODO: 인증 시스템 연동 시 required = true로 설정 혹은 지우기.
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
+        Company company = companyRepository.findByCompanyId(0); // TODO: 인증 시스템 연동 시 회사정보 입력
+        UserMember employee = userMemberRepository.findByCompanyId(0); // TODO: 인증 시스템 연동 시 사원정보 입력
+        //메타데이터 전송을 위해 밑에 데이터를 추출하기위한 변수 2개 추가생성
+        String originName = file.getOriginalFilename();
+        String fileType = StringUtils.getFilenameExtension(originName);
         LocalDateTime now = LocalDateTime.now();
-        Company company = new Company(); // TODO: 인증 시스템 연동 시 회사정보 입력
-        UserMember employee = new UserMember(); // TODO: 인증 시스템 연동 시 사원정보 입력
 
         // DB에 삽입할 새 행 생성.
-        OriginalFileDto originalFile = new OriginalFileDto(fileId.toString(), company.getCompanyId(), employee.getEmployeeId(), file.getOriginalFilename(), now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + file.getOriginalFilename(), StringUtils.getFilenameExtension(file.getOriginalFilename()), null, now);
+        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, employee, file.getOriginalFilename(), fileType, now);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData;
@@ -64,11 +82,18 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
 
-        // TODO: DB에 OriginalFile과 parsedData 저장.
+        // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성
+        try{
+            fileMetadataRepository.save(originalFile);
+        }catch (Exception e){
+            log.error(String.valueOf(e));
+            log.error("파일 메타데이터 DB전송 실패");
+        }
+
 
         // 업로드된 문서를 MongoDB에 저장.
         // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
-        documentService.saveToVectorStore(parsedData, StringUtils.getFilenameExtension(file.getOriginalFilename()));
+        documentService.saveToVectorStore(parsedData, originalFile.getFileType());
 
         // 성공 시 200 반환.
         // MongoDB 저장 여부와는 상관 없음.

@@ -6,14 +6,14 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * original_file 테이블.
+ * file_metadata 테이블.
  */
 @Entity
-@Table(name = "original_file")
+@Table(name = "file_metadata")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class OriginalFile {
+public class FileMetadata {
     @Id
     @Column(name = "file_id")
     private String fileId;
@@ -29,14 +29,8 @@ public class OriginalFile {
     @Column(name = "origin_name", nullable = false)
     private String originName;
 
-    @Column(name = "save_file_name", nullable = false)
-    private String saveFileName;
-
     @Column(name = "file_type", nullable = false, length = 20)
     private String fileType;
-
-    @Column(name = "file_data_path", nullable = false)
-    private String fileDataPath;
 
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;

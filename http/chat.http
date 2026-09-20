@@ -21,7 +21,7 @@ Content-Type: application/json
 Authorization: test
 
 {
-  "message": "2026년 7월 설화명곡역 이용객은?"
+  "message": "치킨이 먹고 싶어. 결근해도 돼?"
 }
 
 ### 이어서 질문

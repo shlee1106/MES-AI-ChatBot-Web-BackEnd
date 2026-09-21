@@ -44,7 +44,7 @@ public class DocumentService {
      * @throws IOException              파일 데이터가 잘못됨.
      * @throws IllegalArgumentException 파일이 잘못된 이름을 가지고 있음.
      */
-    public List<UploadDataDetailsDto> parse(MultipartFile file, int companyId, String fileId, LocalDateTime createdAt) throws IOException, IllegalArgumentException {
+    public List<UploadDataDetailsDto> parse(MultipartFile file, Long companyId, String fileId, LocalDateTime createdAt) throws IOException, IllegalArgumentException {
         // 문서 파서 준비
         List<DocumentParser> parsers = List.of(
                 new DocxParser(companyId, fileId, createdAt),

@@ -16,11 +16,11 @@ import java.util.Objects;
 
 @Slf4j
 public class PdfParser implements DocumentParser {
-    private final int companyId;
+    private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
 
-    public PdfParser(int companyId, String fileId, LocalDateTime createdAt) {
+    public PdfParser(Long companyId, String fileId, LocalDateTime createdAt) {
         this.companyId = companyId;
         this.fileId = fileId;
         this.createdAt = createdAt;

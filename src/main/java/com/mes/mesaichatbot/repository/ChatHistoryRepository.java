@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ChatHistoryRepository extends CrudRepository<ChatHistory, Integer> {
 
+public interface ChatHistoryRepository extends CrudRepository<ChatHistory, String> {
     List<ChatHistory> findAllBySessionIdOrderByRecordedAtAsc(ChatSession sessionId);
 }

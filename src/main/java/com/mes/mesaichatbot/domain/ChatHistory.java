@@ -1,7 +1,13 @@
 package com.mes.mesaichatbot.domain;
 
+import com.mes.mesaichatbot.llm.dto.AskResponseDto;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 
@@ -10,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class ChatHistory {
+public class ChatHistory implements Persistable<String> {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String chatId;
@@ -35,4 +41,23 @@ public class ChatHistory {
 
     @Column(nullable = false)
     private String role;
+
+    @Override
+    public @Nullable String getId() {
+        return this.chatId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return this.chatId == null;
+    }
+
+    /**
+     * 해당 ChatHistory 객체로부터 DTO를 생성합니다.
+     *
+     * @return {@link AskResponseDto}
+     */
+    public AskResponseDto getDto() {
+        return new AskResponseDto(this.chatId, this.companyId.getCompanyId(), this.employeeId.getEmployeeId(), this.sessionId.getSessionId(), this.message, this.recordedAt, this.role);
+    }
 }

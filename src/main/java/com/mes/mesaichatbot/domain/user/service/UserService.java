@@ -1,10 +1,11 @@
 package com.mes.mesaichatbot.domain.user.service;
 
+import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.dto.JoinRequestDTO;
-import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
-import com.mes.mesaichatbot.domain.user.entity.UserEntity;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
-import com.mes.mesaichatbot.domain.user.repository.UserRepository;
+import com.mes.mesaichatbot.repository.CompanyRepository;
+import com.mes.mesaichatbot.repository.UserMemberRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -14,15 +15,19 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 @Service
 public class UserService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserMemberRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CompanyRepository companyRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserMemberRepository userRepository, PasswordEncoder passwordEncoder, CompanyRepository companyRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.companyRepository = companyRepository;
     }
 
     /**
@@ -31,33 +36,33 @@ public class UserService implements UserDetailsService {
     public void createUser(JoinRequestDTO dto) {
         // 현재 요청을 보낸 사람의 권한 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String creatorRole = auth.getAuthorities().iterator().next().getAuthority();
+        String creatorRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
 
         // 일반 사원은 계정생성 불가
-        if (creatorRole.equals("ROLE_USER")) {
+        if (Objects.requireNonNull(creatorRole).equals("ROLE_USER")) {
             throw new IllegalArgumentException("일반 사원은 계정을 생성할 권한이 없습니다.");
         }
 
         // 중간관리자는 최고관리자, 자신과 같은 중간관리자 생성 불가
         if (creatorRole.equals("ROLE_MANAGER")) {
-            if(dto.role() == UserRole.ROLE_MASTER || dto.role() == UserRole.ROLE_MANAGER) {
+            if (dto.role() == UserRole.ROLE_MASTER || dto.role() == UserRole.ROLE_MANAGER) {
                 throw new IllegalArgumentException("중간관리자는 하위관리자 계정만 생성할 수 있습니다.");
             }
         }
 
         // 계정 생성 중복 검증
-        if (userRepository.existsByCompanyIdAndEmployeeId(dto.companyId(), dto.employeeId())) {
+        if (userRepository.existsByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(dto.companyId()), dto.employeeId())) {
             throw new IllegalArgumentException("이미 등록된 사원입니다.");
         }
 
         // 엔티티 저장
-        UserEntity entity = new UserEntity();
-        entity.setCompanyId(dto.companyId());
+        UserMember entity = new UserMember();
+        entity.setCompanyId(companyRepository.findByCompanyId(dto.companyId()));
         entity.setEmployeeId(dto.employeeId());
         entity.setUsername(dto.username());
-        entity.setEmail(dto.email());
+        entity.setCompanyEmail(dto.email());
         entity.setPassword(passwordEncoder.encode(dto.password()));
-        entity.setRole(dto.role());
+        entity.setRoleCode(dto.role());
 
         userRepository.save(entity);
     }
@@ -72,7 +77,7 @@ public class UserService implements UserDetailsService {
      * @throws UsernameNotFoundException DB에 해당 사원 정보가 존재하지 않을 경우 발생
      */
     @Override
-    public UserDetails loadUserByUsername(String combinedUsername) throws UsernameNotFoundException {
+    public @NonNull UserDetails loadUserByUsername(String combinedUsername) throws UsernameNotFoundException {
 
         // 1. LoginFilter에서 '_' 기준으로 결합한 문자열("회사번호_사원번호") 분해
         String[] parts = combinedUsername.split("_");
@@ -80,13 +85,13 @@ public class UserService implements UserDetailsService {
         Long employeeId = Long.parseLong(parts[1]);
 
         // 2. DB 조회: 분리한 회사번호와 사원번호로 우리 회사의 진짜 직원 정보(Entity 원본 장부)를 꺼내옴
-        UserEntity entity = userRepository.findByCompanyIdAndEmployeeId(companyId, employeeId)
+        UserMember entity = userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
                 .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없습니다."));
 
         // 3. Security 권한 규격 맞추기
         // DB엔 "ROLE_USER" 형태로 저장되어 있지만 아래 .roles() 메소드가 내부적으로 "ROLE_"을 붙어주므로
         // 중복("ROLE_ROLE_USER")을 막고자 "ROLE_"을 떼고 순수이름만 남김
-        String role = entity.getRole().name().replace("ROLE_", "");
+        String role = entity.getRoleCode().name().replace("ROLE_", "");
 
         // 4. 공식 신분증 발급 : DB에서 꺼낸 정보(비밀번호, 권한)를 Security 공식 신분증(User 객체)에 옮겨 적어 제출
         // 제출하면 Security가 알아서 사용자가 로그인 창에 입력한 비밀번호와 DB 비밀번호 비교 진행
@@ -100,24 +105,15 @@ public class UserService implements UserDetailsService {
     /**
      * 로그인 한 본인 정보 조회 메소드
      */
-    public UserInfoResponseDTO getMyInfo() {
+    public UserMember getMyInfo() {
         // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
         String subject = SecurityContextHolder.getContext().getAuthentication().getName();
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
         Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
 
-        // DB조회 없으면 예외처리
-        UserEntity user = userRepository.findByCompanyIdAndEmployeeId(companyId, employeeId)
+        // 사용자 정보 반환
+        return userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        // DTO 변환 후 반환
-        return new UserInfoResponseDTO(
-                user.getCompanyId(),
-                user.getEmployeeId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole()
-        );
     }
 }

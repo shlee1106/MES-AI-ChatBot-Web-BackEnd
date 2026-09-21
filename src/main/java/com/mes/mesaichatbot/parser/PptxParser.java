@@ -18,11 +18,11 @@ import java.util.Objects;
 public class PptxParser implements DocumentParser {
 
     //region 필요한 데이터 복사
-    private final int companyId;
+    private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
 
-    public PptxParser(int companyId, String fileId, LocalDateTime createdAt) {
+    public PptxParser(Long companyId, String fileId, LocalDateTime createdAt) {
         this.companyId = companyId;
         this.fileId = fileId;
         this.createdAt = createdAt;

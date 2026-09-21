@@ -1,7 +1,10 @@
 package com.mes.mesaichatbot.parser;
 
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.util.StringUtils;
 import tools.jackson.databind.ObjectMapper;
@@ -14,11 +17,11 @@ import java.util.List;
 import java.util.Objects;
 
 public class XlsxParser implements DocumentParser {
-    private final int companyId;
+    private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
 
-    public XlsxParser(int companyId, String fileId, LocalDateTime createdAt) {
+    public XlsxParser(Long companyId, String fileId, LocalDateTime createdAt) {
         this.companyId = companyId;
         this.fileId = fileId;
         this.createdAt = createdAt;
@@ -46,7 +49,7 @@ public class XlsxParser implements DocumentParser {
                     if (sheet.getRow(j) == null) {
                         continue;
                     }
-                    
+
                     List<String> cells = new ArrayList<>();
                     for (Cell cell : sheet.getRow(j)) {
                         cells.add(dataFormatter.formatCellValue(cell));

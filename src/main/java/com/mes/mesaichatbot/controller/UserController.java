@@ -1,6 +1,6 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
+import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +15,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserInfoResponseDTO> getMyInfo() {
+    public ResponseEntity<UserMember> getMyInfo() {
         return ResponseEntity.ok(userService.getMyInfo());
     }
 }

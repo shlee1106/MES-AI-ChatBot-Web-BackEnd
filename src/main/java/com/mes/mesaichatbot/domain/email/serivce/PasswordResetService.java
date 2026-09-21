@@ -1,11 +1,12 @@
 package com.mes.mesaichatbot.domain.email.serivce;
 
 
+import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.email.dto.PasswordResetRequestDTO;
 import com.mes.mesaichatbot.domain.email.entity.PasswordResetToken;
 import com.mes.mesaichatbot.domain.email.repository.PasswordResetTokenRepository;
-import com.mes.mesaichatbot.domain.user.entity.UserEntity;
-import com.mes.mesaichatbot.domain.user.repository.UserRepository;
+import com.mes.mesaichatbot.repository.CompanyRepository;
+import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,28 +20,29 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PasswordResetService {
 
-    private final UserRepository userRepository;
+    private final UserMemberRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
+    private final CompanyRepository companyRepository;
 
     @Transactional
     public void sendRestEmail(PasswordResetRequestDTO dto) {
 
         // DB에 회사번호, 사원번호, 이메일이 모두 일치하는 유저가 있는지 확인
-        UserEntity user = userRepository.findByCompanyIdAndEmployeeIdAndEmail(
-                dto.companyId(), dto.employeeId(), dto.email()
+        UserMember user = userRepository.findByCompanyIdAndEmployeeIdAndCompanyEmail(
+                companyRepository.findByCompanyId(dto.companyId()), dto.employeeId(), dto.email()
         ).orElseThrow(() -> new IllegalArgumentException("일치하는 사용자 정보가 없습니다."));
 
 
         // UUID 토큰 생성 및 Redis에 저장 (5분 뒤 자동 삭제됨)
         String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId(), user.getEmployeeId());
+        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId().getCompanyId(), user.getEmployeeId());
         tokenRepository.save(resetToken);
 
         // 프론트엔드 URL과 토큰이 결합된 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(user.getEmail());
+        message.setTo(user.getCompanyEmail());
         //TODO: 외부IP 자동으로 할당
         message.setSubject("[MES AI ChatBot 안내] 비밀번호 재설정 링크 이메일");
 //        message.setText("비밀번호 재설정 링크: https://43.200.89.191:8080/api/v1/password/reset-pw?token=" + token +
@@ -52,7 +54,7 @@ public class PasswordResetService {
     }
 
     @Transactional(readOnly = true)
-    public void verifyTokenExists(String token){
+    public void verifyTokenExists(String token) {
         if (!tokenRepository.existsById(token)) {
             throw new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다.");
         }
@@ -68,8 +70,8 @@ public class PasswordResetService {
 
 
         // 토큰에 저장된 식별자로 MySQL에서 유저 조회
-        UserEntity user = userRepository.findByCompanyIdAndEmployeeId(
-                resetToken.getCompanyId(), resetToken.getEmployeeId()
+        UserMember user = userRepository.findByCompanyIdAndEmployeeId(
+                companyRepository.findByCompanyId(resetToken.getCompanyId()), resetToken.getEmployeeId()
         ).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 비밀번호 암호화 후 업데이트

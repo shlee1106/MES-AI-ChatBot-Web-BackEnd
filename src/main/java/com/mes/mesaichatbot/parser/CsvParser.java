@@ -6,7 +6,9 @@ import com.opencsv.exceptions.CsvException;
 import org.springframework.util.StringUtils;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,11 +16,11 @@ import java.util.Objects;
 
 public class CsvParser implements DocumentParser {
     //region 필요한 데이터 복사
-    private final int companyId;
+    private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
 
-    public CsvParser(int companyId, String fileId, LocalDateTime createdAt) {
+    public CsvParser(Long companyId, String fileId, LocalDateTime createdAt) {
         this.companyId = companyId;
         this.fileId = fileId;
         this.createdAt = createdAt;

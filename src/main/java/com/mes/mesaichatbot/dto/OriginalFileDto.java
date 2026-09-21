@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
  */
 public class OriginalFileDto {
     private String fileId;
-    private int companyId;
-    private int employeeId;
+    private Long companyId;
+    private Long employeeId;
     private String originName;
     private String saveFileName;
     private String fileType;

@@ -9,15 +9,17 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 public class DocxParser implements DocumentParser {
-    private final int companyId;
+    private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
 
-    public DocxParser(int companyId, String fileId, LocalDateTime createdAt) {
+    public DocxParser(Long companyId, String fileId, LocalDateTime createdAt) {
         this.companyId = companyId;
         this.fileId = fileId;
         this.createdAt = createdAt;

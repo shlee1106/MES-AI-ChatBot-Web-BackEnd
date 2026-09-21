@@ -26,7 +26,7 @@ public class JWTFilter extends OncePerRequestFilter {
 
     @Override
     // 필터를 거칠 필요 없는 API모음 메소드
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         // 실제 로그인, 로그아웃, 재발급 API 경로에 맞게 수정
         return path.equals("/api/v1/login")
@@ -47,14 +47,14 @@ public class JWTFilter extends OncePerRequestFilter {
         String authorization = request.getHeader("Authorization");
 
         // 헤더에 토큰이 없을 경우
-        if(authorization == null) {
+        if (authorization == null) {
             // 다음 필터로 넘김 (로그인이 필수인 API라면 Security 인가 필터가 자동으로 튕겨냄)
             filterChain.doFilter(request, response);
             return;
         }
 
         // 토큰이 있지만 지정한 "Bearer" 포맷이 아닌 경우(잘못된 요청)
-        if(!authorization.startsWith("Bearer ")) {
+        if (!authorization.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 권한 없음
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"유효하지 않은 토큰\"}");
@@ -77,12 +77,11 @@ public class JWTFilter extends OncePerRequestFilter {
 
             //[중요] 해당 토큰이 AccessToken이 맞는 지 다시 한번 더 확인
             // 누군가 수명이 긴 RefreshToken을 헤더에 넣어 접근 시도 원천 차단
-            if(!"ACCESS".equals(tokenType)) {
+            if (!"ACCESS".equals(tokenType)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"error\":\"유효하지 않은 토큰\"}");
                 return;
-
             }
 
             // 위 검문 통과시 추출한 권한 스프링 시큐리티 공식 규격으로 포장
@@ -96,8 +95,7 @@ public class JWTFilter extends OncePerRequestFilter {
 
             // 모든 인증 절차 끝나 다음 필터나 목적지(컨트롤러)로 요청을 무사히 통과
             filterChain.doFilter(request, response);
-        }
-        catch (ExpiredJwtException e) {
+        } catch (ExpiredJwtException e) {
             //[에러 처리1] 토큰 수명이 끝났을 때 터지는 에러
             // 프론트엔드의 axios 인터셉터가 해당 401 상태 코드,메세지를 보고 몰래 재발급(/refresh)
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

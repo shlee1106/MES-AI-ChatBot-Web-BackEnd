@@ -32,7 +32,7 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
     // 해당 필터가 작동할 정확한 조건 설정
     // 무조건 POST방식이어야 하며, 주소가 "/api/v1/login"일 때만 해당 필터가 낚아챔
-    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.pathPattern(HttpMethod.POST,"/api/v1/login");
+    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/api/v1/login");
 
     // 로그인 성공했을 때 JWT 토큰을 발급해 줄 담당자
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
@@ -92,11 +92,9 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
             // 비밀번호 맞는지 확인 요청
             // (비밀번호 틀릴 시 여기서 자동으로 에러가 반환되어 로그인 실패 처리)
             return this.getAuthenticationManager().authenticate(authRequest);
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**

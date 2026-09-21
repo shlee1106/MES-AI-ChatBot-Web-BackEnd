@@ -4,13 +4,14 @@ import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
 import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
+import com.mes.mesaichatbot.domain.user.service.UserService;
+import com.mes.mesaichatbot.llm.dto.AskResponseDto;
 import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
 import com.mes.mesaichatbot.llm.dto.ChatSessionResponseDto;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.llm.service.LlmChatHistoryService;
+import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 import com.mes.mesaichatbot.repository.ChatSessionRepository;
-import com.mes.mesaichatbot.repository.CompanyRepository;
-import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -19,17 +20,18 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
-@RestController("/chat")
+@RestController
+@RequestMapping("/api/v1/chat")
 public class ChatController {
     /**
      * LLM의 시스템 프롬프트.
@@ -168,40 +170,39 @@ public class ChatController {
     private final ChatHistoryRepository chatHistoryRepository;
 
     private final SecureRandom rng = new SecureRandom();
-    private final CompanyRepository companyRepository;
-    private final UserMemberRepository userMemberRepository;
     private final ChatSessionRepository chatSessionRepository;
+    private final UserService userService;
 
-    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, CompanyRepository companyRepository, UserMemberRepository userMemberRepository, ChatSessionRepository chatSessionRepository) {
+    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, ChatSessionRepository chatSessionRepository, UserService userService) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
         this.chatHistoryRepository = chatHistoryRepository;
-        this.companyRepository = companyRepository;
-        this.userMemberRepository = userMemberRepository;
         this.chatSessionRepository = chatSessionRepository;
+        this.userService = userService;
     }
 
     // TODO: DB 연동 전 임시 테스트용 ID (실제 개발 시 제거 예정)
-    private static final Company TEMP_COMPANY_ID = new Company(0,"", LocalDateTime.now());
-    private static final UserMember TEMP_EMPLOYEE_ID = new UserMember();
+//    private static final Company TEMP_COMPANY_ID = new Company(0,"", LocalDateTime.now());
+//    private static final UserMember TEMP_EMPLOYEE_ID = new UserMember();
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
      *
-     * @param authorization JWT Access Token.
-     * @param sessionId     대화 세션 ID.
-     * @param userQuestion  사용자의 질문. ({@link UserQuestionDto})
+     * @param sessionId    대화 세션 ID.
+     * @param userQuestion 사용자의 질문. ({@link UserQuestionDto})
      * @return {@link ChatHistory}
      */
-    @PostMapping(value = "/chat/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ChatHistory> askToLlm(
+    @PostMapping(value = "/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AskResponseDto> askToLlm(
 //            @RequestParam(name = "file", required = false) MultipartFile file,
-            @RequestHeader(name = "Authorization") String authorization,
             @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion
     ) {
         // 요청 시각 기록
         LocalDateTime requestedAt = LocalDateTime.now();
+
+        UserMember member = userService.getMyInfo();
+        Company company = member.getCompanyId();
 
         // URL 파라미터의 UUID 파싱 시도
         UUID sessionUuid;
@@ -267,42 +268,31 @@ public class ChatController {
         messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt)).content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
 
         // Ai 답변 결과를 조립
-        // TODO: DB 연동 전 임시 테스트용 ID
         ChatSession session = chatSessionRepository.findBySessionId(sessionId);
-        ChatHistory chatResult = new ChatHistory(null,TEMP_COMPANY_ID,TEMP_EMPLOYEE_ID, session, llmAnswer, LocalDateTime.now(), "assistant");
+        ChatHistory chatResult = new ChatHistory(null, company, member, session, llmAnswer, respondedAt, "assistant");
 
         // 유저 질문 결과 조립
-        ChatHistory userHistory = new ChatHistory(null,TEMP_COMPANY_ID, TEMP_EMPLOYEE_ID, session, userQuestion.message(), LocalDateTime.now(), "user");
+        ChatHistory userHistory = new ChatHistory(null, company, member, session, userQuestion.message(), requestedAt, "user");
 
-        // 대화내역 MongoDB저장 (테스트필요)
-        try {
-            chatHistoryRepository.save(userHistory);
-            chatHistoryRepository.save(chatResult);
-        } catch (Exception e) {
-            log.error("MongoDB 대화 내역 저장 실패");
-        }
-
+        // 대화내역 저장
+        chatHistoryRepository.saveAll(List.of(userHistory, chatResult));
 
         // 성공 시 답변 객체 반환
-        return ResponseEntity.ok().body(chatResult);
+        return ResponseEntity.ok().body(chatResult.getDto());
     }
 
     /**
      * 새로운 대화방을 만듭니다.
      *
-     * @param authorization JWT Access Token.
      * @return {@link ChatSession}
      */
-    @PostMapping("/chat/sessionrooms")
+    @PostMapping("/sessionrooms")
     public ResponseEntity<ChatSessionResponseDto> createChatSession(
-            @RequestHeader(name = "Authorization") String authorization,
             @RequestBody ChatSessionRequestDto chatSessionRequest
     ) {
-        // TODO: JWT 검증 과정 추가
         UUID sessionUuid = UUID.randomUUID();
-        // TODO: 회사 정보와 사용자 정보 얻어오기
-        Company company = companyRepository.findByCompanyId(0);
-        UserMember employee = userMemberRepository.findByCompanyId(0);
+        UserMember member = userService.getMyInfo();
+        Company company = member.getCompanyId();
 
         // Title이 있으면 그대로 사용, 아니면 무작위 단어 3개 배합
         String title = chatSessionRequest.title() != null ? chatSessionRequest.title() : "%s-%s-%s".formatted(WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)]);
@@ -310,24 +300,27 @@ public class ChatController {
         // 대화 내역 Map에 새로 등록
         chatHistoryService.getChatHistories().put(sessionUuid, new ArrayList<>());
 
-        ChatSession chatSession = new ChatSession(sessionUuid.toString(), company, employee, title, LocalDateTime.now());
+        ChatSession chatSession = new ChatSession(sessionUuid.toString(), company, member, title, LocalDateTime.now());
 
         chatSessionRepository.save(chatSession);
-        
+
         // 생성 결과 반환
-        return ResponseEntity.ok().body(new ChatSessionResponseDto(sessionUuid.toString(), company.getCompanyId(), employee.getEmployeeId(), title, LocalDateTime.now()));
+        return ResponseEntity.ok().body(new ChatSessionResponseDto(sessionUuid.toString(), company.getCompanyId(), member.getEmployeeId(), title, LocalDateTime.now()));
     }
 
-    @GetMapping("/chat/sessions/{sessionId}/histories")
+    @GetMapping("/sessions/{sessionId}/histories")
     public ResponseEntity<List<ChatHistory>> getChatHistories(
-            @PathVariable(name = "sessionId") String sessionId,
-            @RequestHeader(name = "Authorization") String authorization
+            @PathVariable(name = "sessionId") String sessionId
     ) {
-        // TODO: 타인의 대화 내역에 접근하면 403 반환
-
+        UserMember member = userService.getMyInfo();
         // UUID를 통해 Map에서 대화 내역 가져오기
-        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(((chatSessionRepository.findBySessionId(sessionId))));
-        
+        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(chatSessionRepository.findBySessionId(sessionId));
+
+        // 대화 내역 중 타인의 내역이 포함된 경우 403 반환
+        if (histories.stream().anyMatch(chatHistory -> !Objects.equals(chatHistory.getEmployeeId().getEmployeeId(), member.getEmployeeId()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+
         // 각 Message로부터 ChatHistoryNoSql 매핑, 모아서 반환
         return ResponseEntity.ok(histories);
     }

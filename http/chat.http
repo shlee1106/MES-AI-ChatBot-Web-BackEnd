@@ -1,8 +1,8 @@
 ### 대화 세션 만들기
 
-POST http://localhost:8080/chat/sessionrooms
+POST http://localhost:8080/api/v1/chat/sessionrooms
 Content-Type: application/json
-Authorization: test
+Authorization:
 
 {
   "title": "chicken"
@@ -16,9 +16,10 @@ Authorization: test
 ### 대화 세션에 첫 질문
 
 # 저장된 sessionId 재사용
-POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
+POST http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization: test
+Authorization:
+
 
 {
   "message": "치킨이 먹고 싶어. 결근해도 돼?"
@@ -27,16 +28,17 @@ Authorization: test
 ### 이어서 질문
 
 # 저장된 sessionId 재사용
-POST http://localhost:8080/chat/sessions/{{sessionId}}/ask
+POST http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization: test
+Authorization:
+
 
 {
   "message": "근거가 있어?"
 }
 
 ### 대화 내역 조회
-GET http://localhost:8080/chat/sessions/{{sessionId}}/histories
-Authorization: test
+GET http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/histories
+Authorization:
 
 ###

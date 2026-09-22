@@ -12,7 +12,6 @@ public class SampleController {
 
     @GetMapping("/")
     public String index() {
-
         return "기본 페이지(누구나 접근 가능)";
     }
 
@@ -24,7 +23,6 @@ public class SampleController {
 
     @GetMapping("/manager")
     public String manager() {
-
         return "중간관리자(MANAGER) 이상 접근 가능한 페이지.";
     }
 

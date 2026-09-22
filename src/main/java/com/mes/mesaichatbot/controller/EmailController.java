@@ -24,8 +24,7 @@ public class EmailController {
     }
 
     @PostMapping("/update")
-    public ResponseEntity<String> updatePassword(
-            @RequestBody PasswordUpdateRequestDTO dto) {
+    public ResponseEntity<String> updatePassword(@RequestBody PasswordUpdateRequestDTO dto) {
 
         if (dto.token() == null) {
             return ResponseEntity.badRequest().body("토큰이 만료되었거나 존재하지 않습니다.");

@@ -13,7 +13,6 @@ import java.util.Date;
 
 @Component
 public class JWTUtil {
-
     private final SecretKey key;
     private final long accessTokenExpireTime;
     private final long refreshTokenExpireTime;
@@ -34,7 +33,6 @@ public class JWTUtil {
 
     // AccessToken 생성 메소드
     public String createAccessToken(String username, String role) {
-
         Date now = new Date();
         //현재 날짜시간 + accessToken만료일
         Date expireDate = new Date(now.getTime() + accessTokenExpireTime);
@@ -52,7 +50,6 @@ public class JWTUtil {
 
     // RefreshToken 생성 메소드
     public String createRefreshToken(String username, String role) {
-
         Date now = new Date();
         //현재 날짜시간 + refreshToken만료일
         Date expireDate = new Date(now.getTime() + refreshTokenExpireTime);
@@ -74,7 +71,7 @@ public class JWTUtil {
      * @param token 검사할 JWT 문자열 (Bearer 제외)
      * @return 토큰 안에 들어있는 Payload (subject, role, tokenType 등)
      * @throws io.jsonwebtoken.ExpiredJwtException 토큰의 수명이 만료되었을 때 발생
-     * @throws io.jsonwebtoken.JwtException 서명이 일치하지 않거나 훼손된(위조된) 토큰일 때 발생
+     * @throws io.jsonwebtoken.JwtException        서명이 일치하지 않거나 훼손된(위조된) 토큰일 때 발생
      */
     public Claims getClaims(String token) {
         return Jwts.parser()

@@ -110,61 +110,48 @@ public class SecurityConfig {
     @Bean
     // [수정] throws Exception 추가
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-
         http
                 // JWT를 사용하므로 기본적 활성화 되는 CSRF 방어막과 기본 로그인 화면 끔
-                .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable).formLogin(AbstractHttpConfigurer::disable)
                 // 위에 정의한 CORS(통신 허락) 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
-
-
         // 구역별 출입 규칙
-        http
-                .authorizeHttpRequests(auth -> auth
+        http.authorizeHttpRequests(auth -> auth
 
-                        // 1. 프리패스 구역
-                        // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
-                        .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/",
-                                "/actuator/health", "/api/v1/password/**")
-                        .permitAll()
+                // 1. 프리패스 구역
+                // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
+                .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/", "/actuator/health", "/api/v1/password/**").permitAll()
 
-                        // 비밀번호 변경 기능은 로그인 한사람 모두 접근 가능 (해당 비밀번호 변경 기능 개발자가 변경해줄지 유저가 직접 변경할지 의논진행예정)
-                        //.requestMatchers("/api/v1/password/**").authenticated()
+                // 비밀번호 변경 기능은 로그인 한사람 모두 접근 가능 (해당 비밀번호 변경 기능 개발자가 변경해줄지 유저가 직접 변경할지 의논진행예정)
+                //.requestMatchers("/api/v1/password/**").authenticated()
 
-                        // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
-                        // 서열에 의해 MASTER도 자동 통과
-                        .requestMatchers("/api/v1/admin/users")
-                        .hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+                // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
+                // 서열에 의해 MASTER도 자동 통과
+                .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
 
 
-                        // 3. 권한별 접근 경로
-                        .requestMatchers("/api/v1/admin/**").hasRole("MASTER") // 최고 관리자 전용
-                        .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") // 중간 관리자 전용
-                        .requestMatchers("/api/v1/user/**").hasRole("USER") // 일반 사원 전용
+                // 3. 권한별 접근 경로
+                .requestMatchers("/api/v1/admin/**").hasRole("MASTER") // 최고 관리자 전용
+                .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") // 중간 관리자 전용
+                .requestMatchers("/api/v1/user/**").hasRole("USER") // 일반 사원 전용
 
-                        // 4. 위 적히지 않은 나머지 모든 요청은 무조건 로그인(인증)을 해야 통과
-                        .anyRequest().authenticated()
-                );
-
+                // 4. 위 적히지 않은 나머지 모든 요청은 무조건 로그인(인증)을 해야 통과
+                .anyRequest().authenticated());
         // 필터 배치 순서 설정(매우중요)
         http
                 // 기존 로그아웃 필터가 작동하기 전, 내가 만든 CustomLogoutFilter(쿠키 삭제 등) 먼저 실행
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository, new ObjectMapper()),
-                        org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository, new ObjectMapper()), org.springframework.security.web.authentication.logout.LogoutFilter.class)
 
                 // 기본 아이디,비번 검사 필터 앞에, 내가 만든 JWTFilter(토큰 검사기) 먼저 배치(모든 요청에서 토큰 부터 검사)
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
 
                 // 기본 아이디, 비번 검사 필터 자리를 내가 만든 LoginFilter(JSON 로그인 처리기)로 갈아 끼움
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
         // JWT 특화 설정(무상태성)
-        http
-                .sessionManagement(session -> session
-                        // 서버의 메모리(세션)에 유저 정볼르 기억하지 않겠다고 선언(STATELESS)
-                        // 오직 요청 헤더에 담긴 JWT만 보고 판단
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.sessionManagement(session -> session
+                // 서버의 메모리(세션)에 유저 정볼르 기억하지 않겠다고 선언(STATELESS)
+                // 오직 요청 헤더에 담긴 JWT만 보고 판단
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // 위 보안 시스템 조립 후 시스템 가동
         return http.build();

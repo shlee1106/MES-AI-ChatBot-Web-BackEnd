@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 파일 관련 작업을 처리하는 RestController.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/files")
@@ -50,17 +53,19 @@ public class FileController {
      * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileUploadResponseDto> uploadFile(
-            @RequestPart("file") MultipartFile file
-    ) {
+    public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestPart("file") MultipartFile file) {
+        // 요청 시각 기록.
+        LocalDateTime now = LocalDateTime.now();
+
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
+        // 사용자의 정보를 UserService에서 가져옴
         UserMember member = userService.getMyInfo();
         Company company = member.getCompanyId();
-        //메타데이터 전송을 위해 밑에 데이터를 추출하기위한 변수 2개 추가생성
+
+        // 메타데이터 전송을 위해 데이터 추출용 변수 2개 추가 생성
         String originName = file.getOriginalFilename();
         String fileType = StringUtils.getFilenameExtension(originName);
-        LocalDateTime now = LocalDateTime.now();
 
         // DB에 삽입할 새 행 생성.
         FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, now);
@@ -76,7 +81,7 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
 
-        // 업로드 파일의 메타데이터를 Mysql로 전송하는 코드 작성
+        // 업로드 파일의 메타데이터를 MySQL로 전송하는 코드 작성
         try {
             fileMetadataRepository.save(originalFile);
         } catch (Exception e) {

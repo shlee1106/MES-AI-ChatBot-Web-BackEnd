@@ -29,6 +29,9 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * LLM과의 대화를 담당하는 RestController.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/chat")
@@ -54,97 +57,7 @@ public class ChatController {
      * 대화방 이름이 제공되지 않았을 때
      * 조합되어 새로운 제목을 만듭니다.
      */
-    private static final String[] WORDS = {
-            "apple",
-            "river",
-            "cloud",
-            "mountain",
-            "garden",
-            "ocean",
-            "silver",
-            "paper",
-            "coffee",
-            "orange",
-            "breeze",
-            "castle",
-            "mirror",
-            "rabbit",
-            "pencil",
-            "sunset",
-            "flower",
-            "camera",
-            "desert",
-            "pillow",
-            "guitar",
-            "bridge",
-            "shadow",
-            "lantern",
-            "winter",
-            "summer",
-            "autumn",
-            "spring",
-            "dragon",
-            "crystal",
-            "forest",
-            "candle",
-            "whisper",
-            "blanket",
-            "marble",
-            "window",
-            "planet",
-            "anchor",
-            "compass",
-            "harbor",
-            "feather",
-            "meadow",
-            "thistle",
-            "rainbow",
-            "tunnel",
-            "pocket",
-            "button",
-            "helmet",
-            "violin",
-            "desire",
-            "memory",
-            "picture",
-            "bottle",
-            "basket",
-            "rocket",
-            "island",
-            "valley",
-            "canyon",
-            "thunder",
-            "sunrise",
-            "moonlight",
-            "starlight",
-            "snowflake",
-            "raindrop",
-            "seashell",
-            "pineapple",
-            "strawberry",
-            "blueberry",
-            "watermelon",
-            "notebook",
-            "keyboard",
-            "monitor",
-            "library",
-            "factory",
-            "station",
-            "airport",
-            "village",
-            "market",
-            "museum",
-            "theater",
-            "concert",
-            "festival",
-            "journey",
-            "adventure",
-            "treasure",
-            "diamond",
-            "emerald",
-            "sapphire",
-            "amethyst"
-    };
+    private static final String[] WORDS = {"apple", "river", "cloud", "mountain", "garden", "ocean", "silver", "paper", "coffee", "orange", "breeze", "castle", "mirror", "rabbit", "pencil", "sunset", "flower", "camera", "desert", "pillow", "guitar", "bridge", "shadow", "lantern", "winter", "summer", "autumn", "spring", "dragon", "crystal", "forest", "candle", "whisper", "blanket", "marble", "window", "planet", "anchor", "compass", "harbor", "feather", "meadow", "thistle", "rainbow", "tunnel", "pocket", "button", "helmet", "violin", "desire", "memory", "picture", "bottle", "basket", "rocket", "island", "valley", "canyon", "thunder", "sunrise", "moonlight", "starlight", "snowflake", "raindrop", "seashell", "pineapple", "strawberry", "blueberry", "watermelon", "notebook", "keyboard", "monitor", "library", "factory", "station", "airport", "village", "market", "museum", "theater", "concert", "festival", "journey", "adventure", "treasure", "diamond", "emerald", "sapphire", "amethyst"};
 
     /**
      * 사용자의 질문이 들어갈 템플릿.
@@ -182,10 +95,6 @@ public class ChatController {
         this.userService = userService;
     }
 
-    // TODO: DB 연동 전 임시 테스트용 ID (실제 개발 시 제거 예정)
-//    private static final Company TEMP_COMPANY_ID = new Company(0,"", LocalDateTime.now());
-//    private static final UserMember TEMP_EMPLOYEE_ID = new UserMember();
-
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
      *
@@ -196,11 +105,11 @@ public class ChatController {
     @PostMapping(value = "/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AskResponseDto> askToLlm(
 //            @RequestParam(name = "file", required = false) MultipartFile file,
-            @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion
-    ) {
+            @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion) {
         // 요청 시각 기록
         LocalDateTime requestedAt = LocalDateTime.now();
 
+        // 사용자의 정보를 UserService에서 가져옴
         UserMember member = userService.getMyInfo();
         Company company = member.getCompanyId();
 
@@ -267,7 +176,7 @@ public class ChatController {
         messages.add(UserMessage.builder().metadata(Map.of("recordedAt", requestedAt)).text(formattedQuestion).build());
         messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt)).content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
 
-        // Ai 답변 결과를 조립
+        // Ai 답변 결과를 조립 (null = 기본값 사용)
         ChatSession session = chatSessionRepository.findBySessionId(sessionId);
         ChatHistory chatResult = new ChatHistory(null, company, member, session, llmAnswer, respondedAt, "assistant");
 
@@ -287,10 +196,11 @@ public class ChatController {
      * @return {@link ChatSession}
      */
     @PostMapping("/sessionrooms")
-    public ResponseEntity<ChatSessionResponseDto> createChatSession(
-            @RequestBody ChatSessionRequestDto chatSessionRequest
-    ) {
+    public ResponseEntity<ChatSessionResponseDto> createChatSession(@RequestBody ChatSessionRequestDto chatSessionRequest) {
+        // 대화방의 ID 생성
         UUID sessionUuid = UUID.randomUUID();
+
+        // 사용자의 정보를 UserService에서 가져옴
         UserMember member = userService.getMyInfo();
         Company company = member.getCompanyId();
 
@@ -308,10 +218,14 @@ public class ChatController {
         return ResponseEntity.ok().body(new ChatSessionResponseDto(sessionUuid.toString(), company.getCompanyId(), member.getEmployeeId(), title, LocalDateTime.now()));
     }
 
+    /**
+     * 대화 내역을 불러옵니다.
+     *
+     * @param sessionId 대화방의 세션 ID.
+     * @return List 형태의 대화 내역.
+     */
     @GetMapping("/sessions/{sessionId}/histories")
-    public ResponseEntity<List<ChatHistory>> getChatHistories(
-            @PathVariable(name = "sessionId") String sessionId
-    ) {
+    public ResponseEntity<List<ChatHistory>> getChatHistories(@PathVariable(name = "sessionId") String sessionId) {
         UserMember member = userService.getMyInfo();
         // UUID를 통해 Map에서 대화 내역 가져오기
         List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(chatSessionRepository.findBySessionId(sessionId));

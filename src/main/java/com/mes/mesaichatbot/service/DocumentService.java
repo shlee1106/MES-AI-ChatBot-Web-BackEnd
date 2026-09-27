@@ -139,4 +139,25 @@ public class DocumentService {
                 // 문제 없으면 Log 출력
                 .thenRun(() -> log.info("Save to vector store complete."));
     }
+    /**
+     * VectorStore(MongoDB)에 저장된 특정 파일의 벡터 데이터를 삭제합니다.
+     *
+     * @param fileId 삭제할 파일의 식별자 ID
+     */
+    public void deleteFromVectorStore(String fileId) {
+        try {
+            log.info("VectorStore에서 데이터 삭제 시도: fileId = {}", fileId);
+
+            // fileId가 일치하는 항목 삭제
+            vectorStore.delete(
+                    new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder()
+                            .eq("fileId", fileId)
+                            .build()
+            );
+
+            log.info("VectorStore 데이터 삭제 완료: fileId = {}", fileId);
+        } catch (Exception e) {
+            log.error("VectorStore 데이터 삭제 실패: fileId = {}, error = {}", fileId, e.getMessage(), e);
+        }
+    }
 }

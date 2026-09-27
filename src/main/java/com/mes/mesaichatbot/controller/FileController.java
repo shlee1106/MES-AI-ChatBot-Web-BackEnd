@@ -4,19 +4,18 @@ import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.FileMetadata;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.service.UserService;
+import com.mes.mesaichatbot.dto.FileDeleteResponseDto;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.repository.FileMetadataRepository;
 import com.mes.mesaichatbot.service.DocumentService;
+import com.mes.mesaichatbot.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -38,12 +37,14 @@ public class FileController {
     private final DocumentService documentService;
     private final FileMetadataRepository fileMetadataRepository;
     private final UserService userService;
+    private final FileService fileService;
 
     // 자동 주입.
-    public FileController(DocumentService documentService, FileMetadataRepository fileMetadataRepository, UserService userService) {
+    public FileController(DocumentService documentService, FileMetadataRepository fileMetadataRepository, UserService userService, FileService fileService) {
         this.documentService = documentService;
         this.fileMetadataRepository = fileMetadataRepository;
         this.userService = userService;
+        this.fileService = fileService;
     }
 
     /**
@@ -97,5 +98,29 @@ public class FileController {
         // 성공 시 200 반환.
         // MongoDB 저장 여부와는 상관 없음.
         return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
+    }
+    /**
+     * 업로드 된 파일메타데이터 삭제를 처리합니다.
+     *
+     * @param fileId 삭제할 파일의 식별자 ID (UUID 문자열)
+     * @return 삭제 처리 결과 메시지
+     */
+    @DeleteMapping("/delete/{fileId}")
+    public ResponseEntity<FileDeleteResponseDto> deleteFileMetadata(@PathVariable("fileId") String fileId) {
+        try {
+            // 메타데이터 삭제
+            fileService.delete(fileId);
+
+            // 몽고DB에 등록된 파싱데이터 삭제
+            documentService.deleteFromVectorStore(fileId);
+
+            return ResponseEntity.ok(FileDeleteResponseDto.of(fileId));
+        } catch (IllegalArgumentException e) {
+            log.warn("삭제 실패: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("파일 삭제 중 오류 발생: fileId = {}", fileId, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

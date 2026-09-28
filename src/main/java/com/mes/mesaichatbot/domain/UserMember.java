@@ -1,6 +1,7 @@
 package com.mes.mesaichatbot.domain;
 
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
+import com.mes.mesaichatbot.dto.UserMemberResponseDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,5 +51,9 @@ public class UserMember implements UserDetails {
     @Override
     public String getPassword() {
         return this.password;
+    }
+
+    public UserMemberResponseDto toDto() {
+        return new UserMemberResponseDto(this.companyId.getCompanyId(), this.employeeId, this.username, this.companyEmail, this.roleCode);
     }
 }

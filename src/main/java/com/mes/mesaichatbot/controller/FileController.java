@@ -108,6 +108,7 @@ public class FileController {
     @DeleteMapping("/delete/{fileId}")
     public ResponseEntity<FileDeleteResponseDto> deleteFileMetadata(@PathVariable("fileId") String fileId) {
         try {
+
             // 메타데이터 삭제
             fileService.delete(fileId);
 

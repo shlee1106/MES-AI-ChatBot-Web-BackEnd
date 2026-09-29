@@ -148,14 +148,19 @@ public class DocumentService {
         try {
             log.info("VectorStore에서 데이터 삭제 시도: fileId = {}", fileId);
 
-            // fileId가 일치하는 항목 삭제
-            vectorStore.delete(
-                    new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder()
-                            .eq("fileId", fileId)
+            // fileId가 있는 파싱데이터 조회
+            List<Document> documents = vectorStore.similaritySearch(
+                    SearchRequest.builder()
+                            .query("")
+                            .topK(1000) // 해당 파일에서 생성된 청크 수용
+                            .filterExpression(new FilterExpressionBuilder().eq("fileId", fileId).build())
                             .build()
             );
 
-            log.info("VectorStore 데이터 삭제 완료: fileId = {}", fileId);
+            List<String> documentIds = documents.stream().map(Document::getId).toList();
+
+            vectorStore.delete(documentIds);
+
         } catch (Exception e) {
             log.error("VectorStore 데이터 삭제 실패: fileId = {}, error = {}", fileId, e.getMessage(), e);
         }

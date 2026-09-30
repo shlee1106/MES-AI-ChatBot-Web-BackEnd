@@ -54,6 +54,6 @@ public class UserMember implements UserDetails {
     }
 
     public UserMemberResponseDto toDto() {
-        return new UserMemberResponseDto(this.companyId.getCompanyId(), this.employeeId, this.username, this.companyEmail, this.roleCode);
+        return new UserMemberResponseDto(this.companyId.getCompanyId(), this.employeeId, this.companyId.getCompanyName(), this.username, this.companyEmail, this.roleCode);
     }
 }

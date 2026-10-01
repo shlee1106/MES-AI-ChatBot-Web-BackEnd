@@ -5,12 +5,15 @@ import com.mes.mesaichatbot.llm.converter.UploadDataChunkConverter;
 import com.mes.mesaichatbot.llm.dto.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
 @Service
+@ConditionalOnBean({ChatClient.class, VectorStore.class})
 public class LlmChunkingService {
     //region LLM 프롬프트
     private static final String SYSTEM_PROMPT = """

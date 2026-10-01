@@ -12,6 +12,9 @@ import com.mes.mesaichatbot.service.DocumentService;
 import com.mes.mesaichatbot.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -29,6 +32,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/files")
+@ConditionalOnBean({ChatClient.class, VectorStore.class})
 public class FileController {
 
     /**
@@ -99,6 +103,7 @@ public class FileController {
         // MongoDB 저장 여부와는 상관 없음.
         return ResponseEntity.ok(new FileUploadResponseDto(originalFile, parsedData));
     }
+
     /**
      * 업로드 된 파일메타데이터 삭제를 처리합니다.
      *

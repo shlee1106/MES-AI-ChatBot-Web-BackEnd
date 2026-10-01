@@ -20,6 +20,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,7 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/chat")
+@ConditionalOnBean({ChatClient.class, VectorStore.class})
 public class ChatController {
     /**
      * LLM의 시스템 프롬프트.

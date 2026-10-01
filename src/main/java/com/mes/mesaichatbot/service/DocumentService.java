@@ -4,8 +4,12 @@ import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.parser.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
+@ConditionalOnBean({ChatClient.class, VectorStore.class})
 public class DocumentService {
     private final LlmChunkingService llmChunkingService;
     private final VectorStore vectorStore;
@@ -139,6 +144,7 @@ public class DocumentService {
                 // 문제 없으면 Log 출력
                 .thenRun(() -> log.info("Save to vector store complete."));
     }
+
     /**
      * VectorStore(MongoDB)에 저장된 특정 파일의 벡터 데이터를 삭제합니다.
      *

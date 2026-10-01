@@ -60,7 +60,7 @@ public class PasswordResetService {
             throw new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다.");
         }
     }
-    
+
     @Transactional
     public void updatePassword(String token, String newPassword) {
         // Redis에서 토큰 조회(5분이 지나 삭제되었으면 에러발생)

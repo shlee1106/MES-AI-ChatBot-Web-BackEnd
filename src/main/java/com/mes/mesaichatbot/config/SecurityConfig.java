@@ -122,13 +122,9 @@ public class SecurityConfig {
                 // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
                 .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/", "/actuator/health", "/api/v1/password/**").permitAll()
 
-                // 비밀번호 변경 기능은 로그인 한사람 모두 접근 가능 (해당 비밀번호 변경 기능 개발자가 변경해줄지 유저가 직접 변경할지 의논진행예정)
-                //.requestMatchers("/api/v1/password/**").authenticated()
-
                 // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
                 // 서열에 의해 MASTER도 자동 통과
                 .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
-
 
                 // 3. 권한별 접근 경로
                 .requestMatchers("/api/v1/admin/**").hasRole("MASTER") // 최고 관리자 전용

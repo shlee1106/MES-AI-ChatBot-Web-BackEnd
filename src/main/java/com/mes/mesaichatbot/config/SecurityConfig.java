@@ -149,7 +149,7 @@ public class SecurityConfig {
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
         // JWT 특화 설정(무상태성)
         http.sessionManagement(session -> session
-                // 서버의 메모리(세션)에 유저 정볼르 기억하지 않겠다고 선언(STATELESS)
+                // 서버의 메모리(세션)에 유저 정보를 기억하지 않겠다고 선언(STATELESS)
                 // 오직 요청 헤더에 담긴 JWT만 보고 판단
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

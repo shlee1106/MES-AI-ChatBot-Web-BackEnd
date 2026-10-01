@@ -65,7 +65,7 @@ public class FileController {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
         // 사용자의 정보를 UserService에서 가져옴
-        UserMember member = userService.getMyInfo();
+        UserMember member = userService.getCurrentUserEntity();
         Company company = member.getCompanyId();
 
         // 메타데이터 전송을 위해 데이터 추출용 변수 2개 추가 생성

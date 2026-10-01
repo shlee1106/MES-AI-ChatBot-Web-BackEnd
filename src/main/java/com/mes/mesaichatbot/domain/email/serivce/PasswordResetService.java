@@ -8,6 +8,7 @@ import com.mes.mesaichatbot.domain.email.repository.PasswordResetTokenRepository
 import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,9 +27,11 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final CompanyRepository companyRepository;
 
-    @Transactional
-    public void sendRestEmail(PasswordResetRequestDTO dto) {
+    @Value("${app.frontend-hostname}")
+    private String hostname;
 
+    @Transactional
+    public void sendResetEmail(PasswordResetRequestDTO dto) {
         // DB에 회사번호, 사원번호, 이메일이 모두 일치하는 유저가 있는지 확인
         UserMember user = userRepository.findByCompanyIdAndEmployeeIdAndCompanyEmail(
                 companyRepository.findByCompanyId(dto.companyId()), dto.employeeId(), dto.email()
@@ -43,14 +46,12 @@ public class PasswordResetService {
         // 프론트엔드 URL과 토큰이 결합된 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getCompanyEmail());
-        //TODO: 외부IP 자동으로 할당
         message.setSubject("[MES AI ChatBot 안내] 비밀번호 재설정 링크 이메일");
-//        message.setText("비밀번호 재설정 링크: https://43.200.89.191:8080/api/v1/password/reset-pw?token=" + token +
-//                "\n\n(보안을 위해 본 링크는 5분 후 만료됩니다.)");
-        message.setText("비밀번호 재설정 링크: http://localhost:3000/reset-pw?token=" + token +
-                "\n\n(보안을 위해 본 링크는 5분 후 만료됩니다.)");
+        message.setText("""
+                비밀번호 재설정 링크: %s/reset-pw?token=%s
+                
+                (보안을 위해 본 링크는 5분 후 만료됩니다.)""".formatted(hostname, token));
         mailSender.send(message);
-
     }
 
     @Transactional(readOnly = true)
@@ -59,15 +60,12 @@ public class PasswordResetService {
             throw new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다.");
         }
     }
-
-
+    
     @Transactional
     public void updatePassword(String token, String newPassword) {
-
         // Redis에서 토큰 조회(5분이 지나 삭제되었으면 에러발생)
         PasswordResetToken resetToken = tokenRepository.findById(token)
                 .orElseThrow(() -> new IllegalArgumentException("만료되었거나 유효하지 않은 링크입니다."));
-
 
         // 토큰에 저장된 식별자로 MySQL에서 유저 조회
         UserMember user = userRepository.findByCompanyIdAndEmployeeId(

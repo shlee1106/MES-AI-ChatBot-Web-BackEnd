@@ -1,10 +1,13 @@
 package com.mes.mesaichatbot.domain.user.service;
 
+import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.dto.JoinRequestDTO;
+import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
 import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +17,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -33,6 +38,7 @@ public class UserService implements UserDetailsService {
     /**
      * 권한별로 만들 수 있는 유저 생성 메소드
      */
+    @Transactional
     public void createUser(JoinRequestDTO dto) {
         // 현재 요청을 보낸 사람의 권한 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -105,15 +111,106 @@ public class UserService implements UserDetailsService {
     /**
      * 로그인 한 본인 정보 조회 메소드
      */
-    public UserMember getMyInfo() {
+    @Transactional(readOnly = true)
+    public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException{
         // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
         String subject = SecurityContextHolder.getContext().getAuthentication().getName();
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
         Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
 
+        UserMember user = userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
+                .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
+
         // 사용자 정보 반환
+        return new UserInfoResponseDTO(
+                user.getCompanyId().getCompanyId(),
+                user.getEmployeeId(),
+                user.getUsername(),
+                user.getCompanyEmail(),
+                user.getRoleCode()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public UserMember getCurrentUserEntity() {
+        String subject = SecurityContextHolder.getContext().getAuthentication().getName();
+        String[] parts = subject.split("_");
+        Long companyId = Long.parseLong(parts[0]);
+        Long employeeId = Long.parseLong(parts[1]);
+
         return userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserInfoResponseDTO> getUserForAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
+        Long currentCompanyId = Long.parseLong(auth.getName().split("_")[0]);
+
+        List<UserMember> users;
+
+        if("ROLE_MASTER".equals(currentUserRole)) {
+            users = userRepository.findAll();
+        }
+        else{
+             Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
+             users = userRepository.findByCompanyId(myCompany);
+        }
+
+        return users.stream().map(
+                user -> new UserInfoResponseDTO(
+                        user.getCompanyId().getCompanyId(),
+                        user.getEmployeeId(),
+                        user.getUsername(),
+                        user.getCompanyEmail(),
+                        user.getRoleCode()
+                )).toList();
+    }
+
+    @Transactional
+    public void deleteUser(Long targetEmployeeId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String[] parts = auth.getName().split("_");
+        String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
+        Long currentCompanyId = Long.parseLong(parts[0]);
+        Long currentEmployeeId = Long.parseLong(parts[1]);
+
+        UserMember targetUser = userRepository.findById(targetEmployeeId)
+                .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
+
+        if("ROLE_USER".equals(currentUserRole)) {
+            throw new AccessDeniedException("하위관리자는 탈퇴 권한이 없습니다.");
+        }
+
+        if("ROLE_MANAGER".equals(currentUserRole)) {
+            if(!currentCompanyId.equals(targetUser.getCompanyId().getCompanyId())) {
+                throw new AccessDeniedException("타 회사회원은 탈퇴시킬 수 없습니다.");
+            }
+
+            Boolean isSelf = currentEmployeeId.equals(targetEmployeeId);
+            Boolean isTargetUserRole = targetUser.getRoleCode() == UserRole.ROLE_USER;
+
+            if(!isSelf && !isTargetUserRole) {
+                throw new AccessDeniedException("중간관리자는 본인 또는 하위관리자만 탈퇴 시킬 수 있습니다.");
+            }
+        }
+        userRepository.delete(targetUser);
+    }
+
+    @Transactional
+    public void updateRole(Long targetEmployeeId, String newRoleCode) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentRole = auth.getAuthorities().iterator().next().getAuthority();
+
+        if(!"ROLE_MASTER".equals(currentRole)) {
+            throw new AccessDeniedException("권한 승격은 및 강등 진행은 최고관리자만 가능합니다.");
+        }
+
+        UserMember targetUser = userRepository.findById(targetEmployeeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        targetUser.setRoleCode(UserRole.valueOf(newRoleCode));
     }
 }

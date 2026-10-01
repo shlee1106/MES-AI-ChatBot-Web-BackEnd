@@ -112,7 +112,7 @@ public class ChatController {
         LocalDateTime requestedAt = LocalDateTime.now();
 
         // 사용자의 정보를 UserService에서 가져옴
-        UserMember member = userService.getMyInfo();
+        UserMember member = userService.getCurrentUserEntity();
         Company company = member.getCompanyId();
 
         // URL 파라미터의 UUID 파싱 시도
@@ -203,7 +203,7 @@ public class ChatController {
         UUID sessionUuid = UUID.randomUUID();
 
         // 사용자의 정보를 UserService에서 가져옴
-        UserMember member = userService.getMyInfo();
+        UserMember member = userService.getCurrentUserEntity();
         Company company = member.getCompanyId();
 
         // Title이 있으면 그대로 사용, 아니면 무작위 단어 3개 배합
@@ -228,7 +228,7 @@ public class ChatController {
      */
     @GetMapping("/sessions/{sessionId}/histories")
     public ResponseEntity<List<ChatHistory>> getChatHistories(@PathVariable(name = "sessionId") String sessionId) {
-        UserMember member = userService.getMyInfo();
+        UserMember member = userService.getCurrentUserEntity();
         // UUID를 통해 Map에서 대화 내역 가져오기
         List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(chatSessionRepository.findBySessionId(sessionId));
 

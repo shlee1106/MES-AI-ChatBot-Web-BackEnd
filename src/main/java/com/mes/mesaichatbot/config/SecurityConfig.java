@@ -120,7 +120,7 @@ public class SecurityConfig {
 
                 // 1. 프리패스 구역
                 // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
-                .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/", "/actuator/health", "/api/v1/password/**").permitAll()
+                .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/", "/actuator/health", "/api/v1/password/**", "/robots.txt").permitAll()
 
                 // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
                 // 서열에 의해 MASTER도 자동 통과

@@ -6,10 +6,7 @@ import com.mes.mesaichatbot.domain.email.serivce.PasswordResetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -28,6 +25,17 @@ public class EmailController {
             // 잘못된 데이터 수신 시 400
             log.warn(e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/token/{token}")
+    public ResponseEntity<Boolean> verifyToken(@PathVariable String token) {
+        try {
+            passwordResetService.verifyTokenExists(token);
+            return ResponseEntity.ok(true);
+        } catch (IllegalArgumentException e) {
+            log.warn(String.valueOf(e));
+            return ResponseEntity.notFound().build();
         }
     }
 

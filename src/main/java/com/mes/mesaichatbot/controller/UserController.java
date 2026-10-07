@@ -2,7 +2,6 @@ package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.service.UserService;
-import com.mes.mesaichatbot.dto.UserMemberResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +31,12 @@ public class UserController {
     }
 
     @PatchMapping("/{target}")
-    public ResponseEntity<String> updateRole(@PathVariable("target") Long targetEmployeeId, String newRoleCode) {
-        userService.updateRole(targetEmployeeId, newRoleCode);
-        return ResponseEntity.ok("권한이 수정되었습니다.");
+    public ResponseEntity<String> updateRole(@PathVariable("target") Long targetEmployeeId, @RequestBody String newRoleCode) {
+        try {
+            userService.updateRole(targetEmployeeId, newRoleCode);
+            return ResponseEntity.ok("권한이 수정되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

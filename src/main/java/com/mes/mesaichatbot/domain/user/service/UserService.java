@@ -10,6 +10,7 @@ import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -108,7 +109,7 @@ public class UserService implements UserDetailsService {
      * 로그인 한 본인 정보 조회 메소드
      */
     @Transactional(readOnly = true)
-    public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException{
+    public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException {
         // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
         String subject = SecurityContextHolder.getContext().getAuthentication().getName();
         String[] parts = subject.split("_");
@@ -147,12 +148,11 @@ public class UserService implements UserDetailsService {
 
         List<UserMember> users;
 
-        if("ROLE_MASTER".equals(currentUserRole)) {
+        if ("ROLE_MASTER".equals(currentUserRole)) {
             users = userRepository.findAll();
-        }
-        else{
-             Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
-             users = userRepository.findByCompanyId(myCompany);
+        } else {
+            Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
+            users = userRepository.findByCompanyId(myCompany);
         }
 
         return users.stream().map(
@@ -176,19 +176,19 @@ public class UserService implements UserDetailsService {
         UserMember targetUser = userRepository.findById(targetEmployeeId)
                 .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
-        if("ROLE_USER".equals(currentUserRole)) {
+        if ("ROLE_USER".equals(currentUserRole)) {
             throw new AccessDeniedException("하위관리자는 탈퇴 권한이 없습니다.");
         }
 
-        if("ROLE_MANAGER".equals(currentUserRole)) {
-            if(!currentCompanyId.equals(targetUser.getCompanyId().getCompanyId())) {
+        if ("ROLE_MANAGER".equals(currentUserRole)) {
+            if (!currentCompanyId.equals(targetUser.getCompanyId().getCompanyId())) {
                 throw new AccessDeniedException("타 회사회원은 탈퇴시킬 수 없습니다.");
             }
 
-            Boolean isSelf = currentEmployeeId.equals(targetEmployeeId);
-            Boolean isTargetUserRole = targetUser.getRoleCode() == UserRole.ROLE_USER;
+            boolean isSelf = currentEmployeeId.equals(targetEmployeeId);
+            boolean isTargetUserRole = targetUser.getRoleCode() == UserRole.ROLE_USER;
 
-            if(!isSelf && !isTargetUserRole) {
+            if (!isSelf && !isTargetUserRole) {
                 throw new AccessDeniedException("중간관리자는 본인 또는 하위관리자만 탈퇴 시킬 수 있습니다.");
             }
         }
@@ -200,7 +200,7 @@ public class UserService implements UserDetailsService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentRole = auth.getAuthorities().iterator().next().getAuthority();
 
-        if(!"ROLE_MASTER".equals(currentRole)) {
+        if (!"ROLE_MASTER".equals(currentRole)) {
             throw new AccessDeniedException("권한 승격은 및 강등 진행은 최고관리자만 가능합니다.");
         }
 

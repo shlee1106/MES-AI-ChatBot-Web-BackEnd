@@ -26,8 +26,12 @@ public class UserController {
 
     @DeleteMapping("/{target}")
     public ResponseEntity<String> deleteUser(@PathVariable("target") Long targetEmployeeId) {
-        userService.deleteUser(targetEmployeeId);
-        return ResponseEntity.ok("회원이 탈퇴되었습니다.");
+        try {
+            userService.deleteUser(targetEmployeeId);
+            return ResponseEntity.ok("회원이 탈퇴되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PatchMapping("/{target}")

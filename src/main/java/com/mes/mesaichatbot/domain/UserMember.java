@@ -34,12 +34,6 @@ public class UserMember implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(name = "role_code", nullable = false, length = 50)
     private UserRole roleCode;
-    @Column(name = "user_status_code", nullable = false, length = 20)
-    private String userStatusCode;
-    @Column(name = "auth_code")
-    private int authCode;
-    @Column(name = "auth_expired_at")
-    private LocalDateTime authExpiredAt;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

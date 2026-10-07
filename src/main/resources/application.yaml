@@ -1,13 +1,10 @@
 spring:
-  config:
-    import:
-      - optional:classpath:application-secrets.yaml
   ai:
     vectorstore:
       mongodb:
         initialize-schema: true
     model:
-      embedding: ollama
+      embedding: none
       chat: openai
     ollama:
       embedding:
@@ -16,6 +13,9 @@ spring:
       base-url: http://${OLLAMA_HOST:localhost}:11434
       init:
         pull-model-strategy: when_missing
+    openai:
+      api-key: tgpt_sk_a6758ae08cc78be16db29aa51263eafe8a3535cff0010a805bf12994af947e16
+      base-url: https://hello.timelyai.io/api/v2/chat/bridge/openai
   application:
     name: MESAIChatBotWebBackEnd
   mongodb:
@@ -23,6 +23,8 @@ spring:
     authentication-database: admin
     host: ${MONGODB_HOST:localhost}
     port: 27017
+    username: testuser
+    password: secret
   servlet:
     multipart:
       enabled: true
@@ -30,8 +32,8 @@ spring:
       max-request-size: 10MB
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:JWTtestdb}?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER:admin}        # 실제 MySQL 계정명
-    password: ${MYSQL_PASSWORD:a@001338}     # 실제 MySQL 비밀번호
+    username: ${MYSQL_USER:testuser}        # 실제 MySQL 계정명
+    password: ${MYSQL_PASSWORD:testpassword}     # 실제 MySQL 비밀번호
   jpa:
     hibernate:
       ddl-auto: update
@@ -53,6 +55,10 @@ spring:
           auth: true
           starttls:
             enable: true
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration
+      - org.springframework.ai.vectorstore.mongodb.autoconfigure.MongoDBAtlasVectorStoreAutoConfiguration
 jwt:
   secret: z8$Vq3*B!yE(G+KbPeShVmYq3t6w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G-Seven!
   access-token-expire-time: 600000

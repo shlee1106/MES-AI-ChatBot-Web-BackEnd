@@ -7,6 +7,7 @@ import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
 import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.Authentication;
@@ -23,17 +24,12 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
     private final UserMemberRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CompanyRepository companyRepository;
-
-    public UserService(UserMemberRepository userRepository, PasswordEncoder passwordEncoder, CompanyRepository companyRepository) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.companyRepository = companyRepository;
-    }
 
     /**
      * 권한별로 만들 수 있는 유저 생성 메소드

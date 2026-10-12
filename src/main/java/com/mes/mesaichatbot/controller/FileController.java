@@ -112,21 +112,14 @@ public class FileController {
      */
     @DeleteMapping("/delete/{fileId}")
     public ResponseEntity<FileDeleteResponseDto> deleteFileMetadata(@PathVariable("fileId") String fileId) {
-        try {
 
-            // 메타데이터 삭제
-            fileService.delete(fileId);
+        // 메타데이터 삭제
+        fileService.delete(fileId);
 
-            // 몽고DB에 등록된 파싱데이터 삭제
-            documentService.deleteFromVectorStore(fileId);
+        // 몽고DB에 등록된 파싱데이터 삭제
+        documentService.deleteFromVectorStore(fileId);
 
-            return ResponseEntity.ok(FileDeleteResponseDto.of(fileId));
-        } catch (IllegalArgumentException e) {
-            log.warn("삭제 실패: {}", e.getMessage());
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            log.error("파일 삭제 중 오류 발생: fileId = {}", fileId, e);
-            return ResponseEntity.internalServerError().build();
-        }
+        // 완료응답 반환
+        return ResponseEntity.ok(FileDeleteResponseDto.of(fileId));
     }
 }

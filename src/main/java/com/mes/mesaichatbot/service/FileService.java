@@ -44,7 +44,17 @@ public class FileService {
 
         // 사원번호를 추출
         String subject = auth.getName();
-        Long requesterEmployeeId = Long.parseLong(subject.contains("_") ? subject.split("_")[1] : subject);
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("사용자정보 고유ID 추출실패");
+        }
+
+        Long requesterEmployeeId = 0L;
+
+        try {
+            requesterEmployeeId = Long.parseLong(subject.contains("_") ? subject.split("_")[1] : subject);
+        }catch (Exception e){
+            log.error("사원번호 파싱 실패: subject = {}", subject, e);
+        }
 
         // 추출한 사원번호로 유저 조회
         UserMember requester = userMemberRepository.findById(requesterEmployeeId)

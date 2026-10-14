@@ -8,7 +8,6 @@ import com.mes.mesaichatbot.domain.user.entity.UserRole;
 import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -111,7 +110,7 @@ public class UserService implements UserDetailsService {
     @Transactional(readOnly = true)
     public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException {
         // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
-        String subject = SecurityContextHolder.getContext().getAuthentication().getName();
+        String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
         Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
@@ -131,7 +130,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public UserMember getCurrentUserEntity() {
-        String subject = SecurityContextHolder.getContext().getAuthentication().getName();
+        String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]);
         Long employeeId = Long.parseLong(parts[1]);
@@ -143,7 +142,7 @@ public class UserService implements UserDetailsService {
     @Transactional(readOnly = true)
     public List<UserInfoResponseDTO> getUserForAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
+        String currentUserRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
         Long currentCompanyId = Long.parseLong(auth.getName().split("_")[0]);
 
         List<UserMember> users;
@@ -168,7 +167,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(Long targetEmployeeId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String[] parts = auth.getName().split("_");
+        String[] parts = Objects.requireNonNull(auth).getName().split("_");
         String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
         Long currentCompanyId = Long.parseLong(parts[0]);
         Long currentEmployeeId = Long.parseLong(parts[1]);
@@ -198,7 +197,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void updateRole(Long targetEmployeeId, String newRoleCode) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentRole = auth.getAuthorities().iterator().next().getAuthority();
+        String currentRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
 
         if (!"ROLE_MASTER".equals(currentRole)) {
             throw new AccessDeniedException("권한 승격은 및 강등 진행은 최고관리자만 가능합니다.");

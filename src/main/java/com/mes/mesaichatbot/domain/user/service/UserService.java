@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,6 +40,7 @@ public class UserService implements UserDetailsService {
         // 현재 요청을 보낸 사람의 권한 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String creatorRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
+        Company company = companyRepository.findByCompanyId(dto.companyId());
 
         // 일반 사원은 계정생성 불가
         if (Objects.requireNonNull(creatorRole).equals("ROLE_USER")) {
@@ -53,18 +55,15 @@ public class UserService implements UserDetailsService {
         }
 
         // 계정 생성 중복 검증
-        if (userRepository.existsByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(dto.companyId()), dto.employeeId())) {
+        if (userRepository.existsByCompanyIdAndEmployeeId(company, dto.employeeId())) {
             throw new IllegalArgumentException("이미 등록된 사원입니다.");
         }
 
         // 엔티티 저장
-        UserMember entity = new UserMember();
-        entity.setCompanyId(companyRepository.findByCompanyId(dto.companyId()));
-        entity.setEmployeeId(dto.employeeId());
-        entity.setUsername(dto.username());
-        entity.setCompanyEmail(dto.email());
-        entity.setPassword(passwordEncoder.encode(dto.password()));
-        entity.setRoleCode(dto.role());
+        UserMember entity = new UserMember(
+                dto.employeeId(), company, dto.username(),
+                dto.email(), passwordEncoder.encode(dto.password()),
+                dto.role(), LocalDateTime.now());
 
         userRepository.save(entity);
     }

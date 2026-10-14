@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.domain;
 
+import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
-import com.mes.mesaichatbot.dto.UserMemberResponseDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,7 +47,14 @@ public class UserMember implements UserDetails {
         return this.password;
     }
 
-    public UserMemberResponseDto toDto() {
-        return new UserMemberResponseDto(this.companyId.getCompanyId(), this.employeeId, this.companyId.getCompanyName(), this.username, this.companyEmail, this.roleCode);
+    /**
+     * 사용자 엔티티를 DTO로 변환합니다.
+     *
+     * @return {@link UserInfoResponseDTO}.
+     */
+    public UserInfoResponseDTO toDto() {
+        return new UserInfoResponseDTO(
+                this.companyId.getCompanyId(), this.employeeId,
+                this.username, this.companyEmail, this.roleCode);
     }
 }

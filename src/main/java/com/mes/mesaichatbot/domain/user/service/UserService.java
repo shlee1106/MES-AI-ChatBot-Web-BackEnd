@@ -103,33 +103,16 @@ public class UserService implements UserDetailsService {
                 .roles(role) //.roles() 메서드 내부적으로 다시 ROLE_을 붙여줘 순수 이름만 넘김.
                 .build();
     }
-
+    
     /**
-     * 로그인 한 본인 정보 조회 메소드
+     * 현재 사용자의 엔티티 객체를 반환합니다.
+     *
+     * @return 현재 사용자 정보가 담긴 {@link UserMember} 객체.
+     * @throws UsernameNotFoundException 사용자 정보를 찾을 수 없는 경우 발생합니다.
+     * @throws NullPointerException      세션이 유효하지 않은 경우 발생합니다.
      */
     @Transactional(readOnly = true)
-    public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException {
-        // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
-        String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        String[] parts = subject.split("_");
-        Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
-        Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
-
-        UserMember user = userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
-                .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
-
-        // 사용자 정보 반환
-        return new UserInfoResponseDTO(
-                user.getCompanyId().getCompanyId(),
-                user.getEmployeeId(),
-                user.getUsername(),
-                user.getCompanyEmail(),
-                user.getRoleCode()
-        );
-    }
-
-    @Transactional(readOnly = true)
-    public UserMember getCurrentUserEntity() {
+    public UserMember getCurrentUserEntity() throws NullPointerException, UsernameNotFoundException {
         String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]);
@@ -139,8 +122,14 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
     }
 
+    /**
+     * 모든 사용자를 반환합니다.
+     *
+     * @return 모든 사용자의 목록이 담긴 {@link List}.
+     * @throws NullPointerException 세션이 유효하지 않은 경우 발생합니다.
+     */
     @Transactional(readOnly = true)
-    public List<UserInfoResponseDTO> getUserForAdmin() {
+    public List<UserInfoResponseDTO> getUserForAdmin() throws NullPointerException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentUserRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
         Long currentCompanyId = Long.parseLong(auth.getName().split("_")[0]);
@@ -164,8 +153,16 @@ public class UserService implements UserDetailsService {
                 )).toList();
     }
 
+    /**
+     * 사용자를 삭제합니다.
+     *
+     * @param targetEmployeeId 삭제할 대상의 사원번호.
+     * @throws AccessDeniedException     현재 사용자에게 대상의 삭제 권한이 없는 경우 발생합니다.
+     * @throws UsernameNotFoundException 대상을 잘못 지정한 경우 발생합니다.
+     * @throws NullPointerException      세션이 유효하지 않은 경우 발생합니다.
+     */
     @Transactional
-    public void deleteUser(Long targetEmployeeId) {
+    public void deleteUser(Long targetEmployeeId) throws AccessDeniedException, UsernameNotFoundException, NullPointerException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String[] parts = Objects.requireNonNull(auth).getName().split("_");
         String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
@@ -194,8 +191,18 @@ public class UserService implements UserDetailsService {
         userRepository.delete(targetUser);
     }
 
+    /**
+     * 사용자의 등급을 수정합니다.
+     *
+     * @param targetEmployeeId 수정할 대상.
+     * @param newRoleCode      새로 부여할 등급.
+     * @throws AccessDeniedException     현재 사용자에게 수정 권한이 없는 경우 발생합니다.
+     * @throws UsernameNotFoundException 대상이 유효하지 않은 경우 발생합니다.
+     * @throws IllegalArgumentException  제공된 역할이 유효하지 않은 경우 발생합니다.
+     * @throws NullPointerException      세션이 유효하지 않은 경우 발생합니다.
+     */
     @Transactional
-    public void updateRole(Long targetEmployeeId, String newRoleCode) {
+    public void updateRole(Long targetEmployeeId, String newRoleCode) throws AccessDeniedException, IllegalArgumentException, UsernameNotFoundException, NullPointerException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
 
@@ -204,7 +211,7 @@ public class UserService implements UserDetailsService {
         }
 
         UserMember targetUser = userRepository.findById(targetEmployeeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 회원입니다."));
 
         targetUser.setRoleCode(UserRole.valueOf(newRoleCode));
     }

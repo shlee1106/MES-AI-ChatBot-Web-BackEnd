@@ -20,7 +20,11 @@ public class JoinController {
 
     @PostMapping("/admin/users")
     public ResponseEntity<String> createUser(@Valid @RequestBody JoinRequestDTO dto) { // [수정] 매개변수 타입 변경
-        userService.createUser(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body("계정이 성공적으로 생성 완료.");
+        try {
+            userService.createUser(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body("계정이 성공적으로 생성 완료.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

@@ -103,7 +103,7 @@ public class UserService implements UserDetailsService {
                 .roles(role) //.roles() 메서드 내부적으로 다시 ROLE_을 붙여줘 순수 이름만 넘김.
                 .build();
     }
-    
+
     /**
      * 현재 사용자의 엔티티 객체를 반환합니다.
      *

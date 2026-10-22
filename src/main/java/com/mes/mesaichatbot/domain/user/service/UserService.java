@@ -111,6 +111,21 @@ public class UserService implements UserDetailsService {
      * @throws NullPointerException      세션이 유효하지 않은 경우 발생합니다.
      */
     @Transactional(readOnly = true)
+    public UserInfoResponseDTO getMyInfo() throws UsernameNotFoundException, NullPointerException {
+        // 시큐리티 컨택스트에서 JWT토큰의 Subject(예) "1_2000")를 가져옴
+        String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        String[] parts = subject.split("_");
+        Long companyId = Long.parseLong(parts[0]); // companyId(1)가져옴
+        Long employeeId = Long.parseLong(parts[1]); // employeeId(2000)가져옴
+
+        UserMember user = userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
+                .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
+
+        // 사용자 정보 반환
+        return user.toDto();
+    }
+
+    @Transactional(readOnly = true)
     public UserMember getCurrentUserEntity() throws NullPointerException, UsernameNotFoundException {
         String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String[] parts = subject.split("_");

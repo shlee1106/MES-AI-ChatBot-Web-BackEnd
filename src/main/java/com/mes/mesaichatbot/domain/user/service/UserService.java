@@ -40,7 +40,7 @@ public class UserService implements UserDetailsService {
         // 현재 요청을 보낸 사람의 권한 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String creatorRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
-
+        Long creatorCompanyId = Long.parseLong(auth.getName().split("_")[0]);
         // 일반 사원은 계정생성 불가
         if (Objects.requireNonNull(creatorRole).equals("ROLE_USER")) {
             throw new IllegalArgumentException("일반 사원은 계정을 생성할 권한이 없습니다.");
@@ -50,6 +50,9 @@ public class UserService implements UserDetailsService {
         if (creatorRole.equals("ROLE_MANAGER")) {
             if (dto.role() == UserRole.ROLE_MASTER || dto.role() == UserRole.ROLE_MANAGER) {
                 throw new IllegalArgumentException("중간관리자는 하위관리자 계정만 생성할 수 있습니다.");
+            }
+            if (!creatorCompanyId.equals(dto.companyId())) {
+                throw new AccessDeniedException("중간 관리자는 본인 소속 회사 직원만 등록이 가능합니다.");
             }
         }
 

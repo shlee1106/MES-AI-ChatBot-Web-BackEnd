@@ -3,13 +3,11 @@ package com.mes.mesaichatbot.service;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.parser.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,15 +26,10 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
-@ConditionalOnBean({ChatClient.class, VectorStore.class})
+@RequiredArgsConstructor
 public class DocumentService {
-    private final LlmChunkingService llmChunkingService;
-    private final VectorStore vectorStore;
-
-    public DocumentService(LlmChunkingService llmChunkingService, VectorStore vectorStore) {
-        this.llmChunkingService = llmChunkingService;
-        this.vectorStore = vectorStore;
-    }
+    private final ObjectProvider<LlmChunkingService> llmChunkingServiceProvider;
+    private final ObjectProvider<VectorStore> vectorStoreProvider;
 
     /**
      * 문서를 파싱하여 UploadDataDetailsDto List를 반환합니다.
@@ -85,6 +78,14 @@ public class DocumentService {
     // 문서를 비동기로 MongoDB에 저장.
     @Async("saveToVectorStore")
     public void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType) {
+        LlmChunkingService llmChunkingService = llmChunkingServiceProvider.getIfAvailable();
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+
+        if (llmChunkingService == null || vectorStore == null) {
+            log.warn("VectorStore 또는 LLM을 사용할 수 없습니다. 실행을 취소합니다.");
+            return;
+        }
+
         CompletableFuture.runAsync(() -> {
                     log.info("Saving to vector store...");
                     List<Document> data;
@@ -150,15 +151,19 @@ public class DocumentService {
      *
      * @param fileId 삭제할 파일의 식별자 ID
      */
-    public void deleteFromVectorStore(String fileId) {
-        try {
-            String filterExpression = String.format("fileId == '%s'", fileId);
+    public void deleteFromVectorStore(String fileId) throws IllegalStateException {
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
 
-            vectorStore.delete(filterExpression);
-
-            log.info("VectorStore 데이터 삭제 완료: fileId = {}", fileId);
-        } catch (Exception e) {
-            log.error("VectorStore 데이터 삭제 실패: fileId = {}, error = {}", fileId, e.getMessage(), e);
+        if (vectorStore == null) {
+            log.warn("VectorStore를 사용할 수 없습니다. 실행을 취소합니다.");
+            return;
         }
+
+        // 필터링 구문 생성
+        String filterExpression = String.format("fileId == '%s'", fileId);
+        // 구문을 MongoDB에 전송
+        vectorStore.delete(filterExpression);
+        // 로그 기록
+        log.info("VectorStore 데이터 삭제 완료: fileId = {}", fileId);
     }
 }

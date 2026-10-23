@@ -1,6 +1,5 @@
 package com.mes.mesaichatbot.domain;
 
-import com.mes.mesaichatbot.llm.dto.AskResponseDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -50,14 +49,5 @@ public class ChatHistory implements Persistable<String> {
     @Override
     public boolean isNew() {
         return this.chatId == null;
-    }
-
-    /**
-     * 해당 ChatHistory 객체로부터 DTO를 생성합니다.
-     *
-     * @return {@link AskResponseDto}
-     */
-    public AskResponseDto getDto() {
-        return new AskResponseDto(this.chatId, this.companyId.getCompanyId(), this.employeeId.getEmployeeId(), this.sessionId.getSessionId(), this.message, this.recordedAt, this.role);
     }
 }

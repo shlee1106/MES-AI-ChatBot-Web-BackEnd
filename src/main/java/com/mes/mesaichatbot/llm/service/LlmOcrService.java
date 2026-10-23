@@ -2,15 +2,12 @@ package com.mes.mesaichatbot.llm.service;
 
 import org.apache.poi.xwpf.usermodel.XWPFPictureData;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
 @Service
-@ConditionalOnBean({ChatClient.class, VectorStore.class})
 public class LlmOcrService {
     private ChatClient chatClient;
 

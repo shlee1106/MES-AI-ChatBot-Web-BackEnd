@@ -122,7 +122,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
 
         // 사용자 정보 반환
-        return user.toDto();
+        return UserInfoResponseDTO.from(user);
     }
 
     @Transactional(readOnly = true)
@@ -157,14 +157,7 @@ public class UserService implements UserDetailsService {
             users = userRepository.findByCompanyId(myCompany);
         }
 
-        return users.stream().map(
-                user -> new UserInfoResponseDTO(
-                        user.getCompanyId().getCompanyId(),
-                        user.getEmployeeId(),
-                        user.getUsername(),
-                        user.getCompanyEmail(),
-                        user.getRoleCode()
-                )).toList();
+        return UserInfoResponseDTO.from(users);
     }
 
     /**

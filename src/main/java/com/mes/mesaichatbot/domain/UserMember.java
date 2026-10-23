@@ -1,6 +1,5 @@
 package com.mes.mesaichatbot.domain;
 
-import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,16 +40,5 @@ public class UserMember implements UserDetails {
     @Override
     public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.roleCode.toString()));
-    }
-
-    /**
-     * 사용자 엔티티를 DTO로 변환합니다.
-     *
-     * @return {@link UserInfoResponseDTO}.
-     */
-    public UserInfoResponseDTO toDto() {
-        return new UserInfoResponseDTO(
-                this.companyId.getCompanyId(), this.employeeId,
-                this.username, this.companyEmail, this.roleCode);
     }
 }

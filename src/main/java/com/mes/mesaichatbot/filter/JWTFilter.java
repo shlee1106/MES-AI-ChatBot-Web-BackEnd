@@ -97,7 +97,7 @@ public class JWTFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
             //[에러 처리1] 토큰 수명이 끝났을 때 터지는 에러
-            // 프론트엔드의 axios 인터셉터가 해당 401 상태 코드,메세지를 보고 몰래 재발급(/refresh)
+            // 프론트엔드의 ky 인터셉터가 해당 401 상태 코드,메세지를 보고 몰래 재발급(/refresh)
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"토큰이 만료되었습니다.\"}");

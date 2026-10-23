@@ -135,7 +135,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated());
         // 필터 배치 순서 설정(매우중요)
         http
-                // 기존 로그아웃 필터가 작동하기 전, 내가 만든 CustomLogoutFilter(쿠키 삭제 등) 먼저 실행
+                // 기존 로그아웃 필터가 작동하기 전, 내가 만든 CustomLogoutFilter 먼저 실행
                 .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository, new ObjectMapper()), org.springframework.security.web.authentication.logout.LogoutFilter.class)
 
                 // 기본 아이디,비번 검사 필터 앞에, 내가 만든 JWTFilter(토큰 검사기) 먼저 배치(모든 요청에서 토큰 부터 검사)

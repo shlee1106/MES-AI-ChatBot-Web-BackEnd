@@ -1,10 +1,8 @@
 package com.mes.mesaichatbot.domain;
 
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
-import com.mes.mesaichatbot.dto.UserMemberResponseDto;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +16,8 @@ import java.util.List;
 @Table(name = "user_member")
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserMember implements UserDetails {
     @Id
     @Column(name = "employee_id")
@@ -40,14 +40,5 @@ public class UserMember implements UserDetails {
     @Override
     public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.roleCode.toString()));
-    }
-
-    @Override
-    public String getPassword() {
-        return this.password;
-    }
-
-    public UserMemberResponseDto toDto() {
-        return new UserMemberResponseDto(this.companyId.getCompanyId(), this.employeeId, this.companyId.getCompanyName(), this.username, this.companyEmail, this.roleCode);
     }
 }

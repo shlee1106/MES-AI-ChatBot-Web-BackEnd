@@ -51,7 +51,7 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
      * 아이디와 비밀번호를 꺼내 임시 출입증 생성 후 검증 요청
      */
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+    public Authentication attemptAuthentication(HttpServletRequest request, @NonNull HttpServletResponse response)
             throws AuthenticationException {
 
         // 혹시라도 GET 등의 다른 방식으로 로그인 시도 시 에러반환 후 차단

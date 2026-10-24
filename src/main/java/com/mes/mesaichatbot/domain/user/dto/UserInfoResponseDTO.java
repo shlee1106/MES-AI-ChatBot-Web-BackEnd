@@ -1,9 +1,9 @@
 package com.mes.mesaichatbot.domain.user.dto;
 
-import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record UserInfoResponseDTO(
@@ -12,7 +12,8 @@ public record UserInfoResponseDTO(
         String username,
         String email,
         UserRole role,
-        String companyName
+        String companyName,
+        LocalDateTime createdAt
 ) {
     /**
      * 사용자 엔티티를 DTO로 변환합니다.
@@ -22,7 +23,8 @@ public record UserInfoResponseDTO(
     public static UserInfoResponseDTO from(UserMember member) {
         return new UserInfoResponseDTO(
                 member.getCompanyId().getCompanyId(), member.getEmployeeId(),
-                member.getUsername(), member.getCompanyEmail(),member.getRoleCode(), member.getCompanyId().getCompanyName());
+                member.getUsername(), member.getCompanyEmail(),member.getRoleCode(), member.getCompanyId().getCompanyName(),
+                member.getCreatedAt());
     }
 
     public static List<UserInfoResponseDTO> from(List<UserMember> member) {

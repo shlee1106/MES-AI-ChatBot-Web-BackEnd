@@ -20,7 +20,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserInfoResponseDTO> getMyInfo() {
         try {
-            return ResponseEntity.ok(UserInfoResponseDTO.from(userService.getCurrentUserEntity()));
+            return ResponseEntity.ok(userService.getMyInfo());
         } catch (NullPointerException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (UsernameNotFoundException e) {

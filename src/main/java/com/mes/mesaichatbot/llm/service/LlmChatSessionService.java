@@ -5,6 +5,7 @@ import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.repository.ChatSessionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LlmChatSessionService {
@@ -39,7 +41,8 @@ public class LlmChatSessionService {
         // 인메모리 대화 내역 캐시에서도 제거
         try {
             llmChatHistoryService.getChatHistories().remove(UUID.fromString(sessionId));
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException e) {
+            log.warn("제거할 세션 항목이 없습니다.", e);
             // UUID 형식이 아닌 경우 캐시 제거 생략
         }
     }

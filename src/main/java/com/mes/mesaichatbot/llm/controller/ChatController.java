@@ -10,6 +10,7 @@ import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
 import com.mes.mesaichatbot.llm.dto.ChatSessionResponseDto;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.llm.service.LlmChatHistoryService;
+import com.mes.mesaichatbot.llm.service.LlmChatSessionService;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 import com.mes.mesaichatbot.repository.ChatSessionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -87,14 +89,16 @@ public class ChatController {
     private final SecureRandom rng = new SecureRandom();
     private final ChatSessionRepository chatSessionRepository;
     private final UserService userService;
+    private final LlmChatSessionService llmChatSessionService;
 
-    public ChatController(ChatClient.Builder chatClient, ObjectProvider<VectorStore> vectorStoreProvider, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, ChatSessionRepository chatSessionRepository, UserService userService) {
+    public ChatController(ChatClient.Builder chatClient, ObjectProvider<VectorStore> vectorStoreProvider, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, ChatSessionRepository chatSessionRepository, UserService userService, LlmChatSessionService llmChatSessionService) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
         this.vectorStore = vectorStoreProvider.getIfAvailable();
         this.chatHistoryService = chatHistoryService;
         this.chatHistoryRepository = chatHistoryRepository;
         this.chatSessionRepository = chatSessionRepository;
         this.userService = userService;
+        this.llmChatSessionService = llmChatSessionService;
     }
 
     /**
@@ -239,5 +243,30 @@ public class ChatController {
 
         // 각 Message로부터 ChatHistoryNoSql 매핑, 모아서 반환
         return ResponseEntity.ok(histories);
+    }
+
+    @DeleteMapping(value = "/sessions/{sessionId}")
+    public ResponseEntity<String> deleteChatSession(@PathVariable String sessionId) {
+        try {
+            llmChatSessionService.deleteChatSessions(sessionId);
+            return ResponseEntity.ok("삭제되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    /**
+     * 모든 대화 세션을 불러옵니다.
+     *
+     * @return List 형태의 대화 내역.
+     */
+    @GetMapping("/sessions")
+    public ResponseEntity<List<ChatSessionResponseDto>> getChatHistories() {
+        try {
+            return ResponseEntity.ok(ChatSessionResponseDto.from(llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
+        } catch (NullPointerException | UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

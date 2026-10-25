@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Persistable;
 
@@ -29,10 +31,11 @@ public class ChatHistory implements Persistable<String> {
     private UserMember employeeId;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "session_id", nullable = false)
     private ChatSession sessionId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1024)
     private String message;
 
     @Column(nullable = false)

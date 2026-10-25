@@ -1,4 +1,7 @@
 spring:
+  web:
+    resources:
+      add-mappings: false
   ai:
     vectorstore:
       mongodb:

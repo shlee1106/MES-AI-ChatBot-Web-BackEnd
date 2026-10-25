@@ -20,9 +20,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
@@ -86,9 +88,9 @@ public class ChatController {
     private final ChatSessionRepository chatSessionRepository;
     private final UserService userService;
 
-    public ChatController(ChatClient.Builder chatClient, VectorStore vectorStore, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, ChatSessionRepository chatSessionRepository, UserService userService) {
+    public ChatController(ChatClient.Builder chatClient, ObjectProvider<VectorStore> vectorStoreProvider, LlmChatHistoryService chatHistoryService, ChatHistoryRepository chatHistoryRepository, ChatSessionRepository chatSessionRepository, UserService userService) {
         this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
-        this.vectorStore = vectorStore;
+        this.vectorStore = vectorStoreProvider.getIfAvailable();
         this.chatHistoryService = chatHistoryService;
         this.chatHistoryRepository = chatHistoryRepository;
         this.chatSessionRepository = chatSessionRepository;

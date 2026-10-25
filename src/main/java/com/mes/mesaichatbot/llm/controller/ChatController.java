@@ -248,10 +248,15 @@ public class ChatController {
     @DeleteMapping(value = "/sessions/{sessionId}")
     public ResponseEntity<String> deleteChatSession(@PathVariable String sessionId) {
         try {
-            llmChatSessionService.deleteChatSessions(sessionId);
+            UserMember member = userService.getCurrentUserEntity();
+            llmChatSessionService.deleteChatSessions(sessionId, member);
             return ResponseEntity.ok("삭제되었습니다.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (NullPointerException | UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 

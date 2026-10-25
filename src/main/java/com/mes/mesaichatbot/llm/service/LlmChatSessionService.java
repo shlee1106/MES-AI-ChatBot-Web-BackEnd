@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -31,8 +30,8 @@ public class LlmChatSessionService {
                 .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
 
         // 본인 소유의 대화방인지 검증 (회사번호 + 사원번호 일치 확인)
-        if (!Objects.equals(session.getEmployeeId().getEmployeeId(), member.getEmployeeId()) ||
-                !Objects.equals(session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId())) {
+        if (!session.getEmployeeId().getEmployeeId().equals(member.getEmployeeId()) ||
+                !session.getCompanyId().getCompanyId().equals(member.getCompanyId().getCompanyId())) {
             throw new AccessDeniedException("본인의 대화방만 삭제할 수 있습니다.");
         }
 

@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.1.1'
+    id 'org.springframework.boot' version '4.1.2'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-    set('springAiVersion', "2.0.1")
+    set('springAiVersion', "2.0.2")
 }
 
 dependencies {
@@ -43,8 +43,8 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-tika-document-reader'
     implementation 'org.springframework.ai:spring-ai-vector-store-advisor'
     implementation 'org.springframework.ai:spring-ai-rag'
-    implementation 'org.apache.poi:poi:5.5.1'
-    implementation 'org.apache.poi:poi-ooxml:5.5.1'
+    implementation 'org.apache.poi:poi:6.0.0'
+    implementation 'org.apache.poi:poi-ooxml:6.0.0'
     implementation 'com.opencsv:opencsv:5.12.0'
     implementation 'org.apache.pdfbox:pdfbox:3.0.8'
 

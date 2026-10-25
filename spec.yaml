@@ -441,6 +441,9 @@ components:
           format: date-time
         role:
           type: string
+          enum:
+            - user
+            - assistant
     ChatSessionRequestDto:
       type: object
       properties:
@@ -537,10 +540,9 @@ components:
           format: date-time
         role:
           type: string
-        new:
-          type: boolean
-        id:
-          type: string
+          enum:
+            - user
+            - assistant
     ChatSession:
       type: object
       properties:

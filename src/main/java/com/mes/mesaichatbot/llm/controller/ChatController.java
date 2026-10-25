@@ -25,13 +25,16 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * LLM과의 대화를 담당하는 RestController.
@@ -267,7 +270,7 @@ public class ChatController {
      * @return List 형태의 대화 내역.
      */
     @GetMapping("/sessions")
-    public ResponseEntity<List<ChatSessionResponseDto>> getChatHistories() {
+    public ResponseEntity<List<ChatSessionResponseDto>> getChatSessions() {
         try {
             return ResponseEntity.ok(ChatSessionResponseDto.from(llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
         } catch (NullPointerException | UsernameNotFoundException e) {

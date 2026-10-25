@@ -1,372 +1,70 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  version: 1.0.0
-  title: MES AI ChatBot API
-  description: MES 데이터 기반 AI 챗봇 웹 서비스 API 명세서입니다.
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: http://localhost:8080
+    description: Generated server url
 paths:
-  /auth/login:
+  /api/v1/password/update:
     post:
-      summary: 사원 로그인
-      tags: [ ]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    x-stoplight:
-                      id: knw4bljxmr5yd
-                  message:
-                    type: string
-                    x-stoplight:
-                      id: 27ee3l5ymwvfo
-                  companyId:
-                    type: integer
-                  data:
-                    $ref: '#/components/schemas/CredentialsNosql'
-              examples:
-                Example 1:
-                  value:
-                    status: OK
-                    message: 로그인에 성공하셨습니다.
-                    companyId: 814324
-                    data:
-                      id: '20260526'
-                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
-                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG8yZSIsImFkbWluIjp0cnVlLCJpYXQiOjE3ODE1ODcwODV9.9uPM5fogFI7QGLorKMaCpn0mFCARGTZ-1j2oCSv-QGQ
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    x-stoplight:
-                      id: x8d30rrkvo0mz
-                  message:
-                    type: string
-                    x-stoplight:
-                      id: lbv7m4hfwqq8d
-              examples:
-                Example 1:
-                  value:
-                    status: Unauthorized
-                    message: 아이디 또는 비밀번호가 틀렸습니다.
-      operationId: post-api-v1-auth-login
-      description: "설명: 로그인 (사원번호/비밀번호 인증)\r\n\r\nRequest Body: CredentialsNosql (또는 로그인용 ID/PW 객체)\r\n\r\nResponse: JWT 토큰 및 로그인 유저 정보"
+      tags:
+        - email-controller
+      operationId: updatePassword
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                companyId:
-                  type: integer
-                loginData:
-                  $ref: '#/components/schemas/login'
-            examples:
-              Example 1:
-                value:
-                  companyId: 814324
-                  loginData:
-                    id: '20260526'
-                    passwd: passwd1234!
-        description: ''
-    parameters: [ ]
-  /users/me:
-    get:
-      summary: 내 정보 조회
-      tags: [ ]
+              $ref: "#/components/schemas/PasswordUpdateRequestDTO"
+        required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
-            application/json:
+            'text/plain':
               schema:
-                $ref: '#/components/schemas/UserMember'
-              examples:
-                Example 1:
-                  value:
-                    employeeId: 20260041
-                    userName: 홍길동
-                    companyEmail: gildong.hong@mes-factory.com
-                    roleCode: ROLE_MANAGER
-                    userStatusCode: STATUS_ACTIVE
-                    authCode: 3
-                    authExpiredAt: '2026-12-31T23:59:59Z'
-                    createdAt: '2026-06-09T18:00:00Z'
-      operationId: get-api-v1-users-me
-      description: "설명: 현재 로그인한 내 정보 조회\r\n\r\nResponse: UserMember"
-      requestBody:
-        content: { }
-      parameters:
-        - schema:
-            type: string
-          in: header
-          name: Authorization
-          description: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
-    parameters:
-      - schema:
-          type: string
-        in: header
-        name: Authorization
-        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
-        required: true
-  /chat/sessions:
-    get:
-      summary: 이전 대화방 목록 조회
-      tags: [ ]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ChatSession'
-              examples:
-                Example 1:
-                  value:
-                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
-                      companyId: 814324
-                      employeeId: 20260526
-                      sessionTitle: 오늘의 매출량
-                      createdAt: '2025-08-24T14:15:22Z'
-                Example 2:
-                  value:
-                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
-                      employeeId: 20260526
-                      companyId: 814324
-                      sessionTitle: 오늘의 매출량
-                      createdAt: '2025-08-24T14:15:22Z'
-                    - sessionId: 5f30fbcd-4efe-42a0-be32-b6baf15147d4
-                      companyId: 814324
-                      employeeId: 20260526
-                      sessionTitle: 오늘의 매출량
-                      createdAt: '2025-08-24T14:15:22Z'
-        '401':
-          description: Unauthorized
-          content: { }
-      operationId: get-api-v1-chat-sessions
-      description: "설명: 현재 로그인한 사용자의 이전 대화방(세션) 리스트 조회\r\n\r\nResponse: Array [ ChatSession ]"
-      parameters:
-        - schema:
-            type: string
-          in: header
-          name: Authorization
-          description: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTc4MTU4NzA4NX0.J3Hle-5eGdhLfr3aERdNZtdVpAs9gV2XdZ2Ea4x49Tk
-    parameters:
-      - schema:
-          type: string
-        in: header
-        name: Authorization
-        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
-        required: true
-  /chat/sessionrooms:
+                type: string
+  /api/v1/password/request:
     post:
-      summary: 새 대화방 생성
-      tags: [ ]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatSession'
-              examples:
-                Example 1:
-                  value:
-                    sessionId: c92124a1-1f46-4416-9130-110cf9cc7d6c
-                    companyId: 814324
-                    employeeId: 20260526
-                    sessionTitle: 금일 제조 공장 상황
-                    createdAt: '2026-06-09T19:45:00Z'
-      operationId: post-api-v1-chat-sessionrooms
-      description: "설명: 새로운 대화방(세션) 생성 (예: 새 대화 시작하기 버튼 클릭 시)\r\n\r\nRequest Body: sessionTitle 등이 포함된 객체\r\n\r\nResponse: 생성된 ChatSession"
+      tags:
+        - email-controller
+      operationId: requestResetEmail
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewChatSession'
-            examples:
-              Example 1:
-                value:
-                  title: 금일 제조 공장 상황
-    parameters:
-      - schema:
-          type: string
-        in: header
-        name: Authorization
-        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
+              $ref: "#/components/schemas/PasswordResetRequestDTO"
         required: true
-  '/chat/sessions/{sessionId}/histories':
-    parameters:
-      - schema:
-          type: string
-        name: sessionId
-        in: path
-        required: true
-        description: UUID
-      - schema:
-          type: string
-        in: header
-        name: Authorization
-        description: 'JWT 토큰 (예: Bearer {초기발급토큰})'
-        required: true
-    get:
-      summary: 대화 내역조회
-      tags: [ ]
       responses:
-        '200':
+        "200":
           description: OK
           content:
-            application/json:
+            'text/plain':
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ChatHistoriesNosql'
-              examples:
-                Example 1:
-                  value:
-                    - id: 01H2X6Z4NB92D5X8C1V2B3N4M5
-                      chatroomId: b96924c1-8q46-5496-2167-222ac9ff7d6c
-                      message: 이번 달 MES 가동률 데이터 엑셀 파일에서 2공장 불량률 좀 분석해줘.
-                      recordedAt: '2026-07-07T21:00:15Z'
-                      role: user
-                    - id: 01H2X6Z4NB92D5X8C1V2B3N4M5
-                      chatroomId: b96924c1-8q46-5496-2167-222ac9ff7d6c
-                      message: '업로드하신 파일 분석 결과, 2공장의 이번 달 평균 불량률은 0.23%입니다.'
-                      recordedAt: '2026-07-07T21:00:18Z'
-                      role: ai
-      operationId: get-api-v1-chat-sessions-sessionId-histories
-      description: "설명: 특정 대화방의 과거 대화 내역 전체 조회 (방 클릭 시 과거 내역 불러오기)\r\n\r\nResponse: Array [ ChatHistoriesNosql ]"
+                type: string
+  /api/v1/jwt/refresh:
+    post:
+      tags:
+        - jwt-controller
+      operationId: refresh
       parameters:
-        - schema:
+        - name: refreshToken
+          in: cookie
+          required: true
+          schema:
             type: string
-          in: query
-          name: sessionId
-          description: UUID
-  '/chat/sessions/{sessionId}/ask':
-    parameters:
-      - schema:
-          type: string
-        name: sessionId
-        in: path
-        required: true
-      - schema:
-          type: string
-        in: header
-        name: Authorization
-        description: JWT
-        required: true
-    post:
-      summary: 챗봇에게 질문
-      tags: [ ]
       responses:
-        '200':
+        "200":
           description: OK
           content:
-            application/json:
+            'text/plain':
               schema:
-                $ref: '#/components/schemas/ChatHistoriesNosql'
-              examples:
-                Example 1:
-                  value:
-                    id: 01H2X6Z4NB92D5X8C1V2B3N4M5
-                    chatroomId: c92124a1-1f46-4416-9130-110cf9cc7d6c
-                    message: '[Gemini 1.5 Pro 분석] 현재 A라인의 종합 설비 효율(OEE)은 85%이며, B라인은 92%입니다.'
-                    recordedAt: '2026-06-09T18:35:00Z'
-                    role: assistant
-      operationId: post-api-v1-chat-sessions-sessionId-messages
-      description: "설명: 챗봇에게 질문 던지기 (실제 대화 진행)\r\n\r\nRequest Body: userQuestion (사용자 질문 내용)\r\n\r\nResponse: ChatHistoriesNosql (AI의 답변 chatbotResponse가 포함된 결과 반환)"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  x-stoplight:
-                    id: l7mitvh7a47sv
-            examples:
-              Example 1:
-                value:
-                  message: 오늘의 불량품 현황은 어때?
-  /files/upload:
+                type: string
+  /api/v1/files/upload:
     post:
-      summary: 파일 업로드
-      tags: [ ]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  fileData:
-                    $ref: '#/components/schemas/OriginalFile'
-                  parsedData:
-                    $ref: '#/components/schemas/UploadDataRows(Update)'
-              examples:
-                Example 1:
-                  value:
-                    fileData:
-                      fileId: 78f59a6e-2cde-498c-9ee3-03b3d9ab826c
-                      companyId: 10
-                      employeeId: 20260526
-                      originName: ' A라인_프레스설비_정비가이드북.pdf'
-                      saveFileName: 20260601_A라인_프레스설비_정비가이드북.pdf
-                      fileType: pdf
-                      fileDataPath: /var/www/mes-chatbot/storage/uploads/20260601_78f59a6e_A라인_프레스설비_정비가이드북.pdf
-                      uploadedAt: '2026-06-01T14:15:22Z'
-                    parsedData:
-                      - dataId: 1
-                        companyId: 10
-                        fileId: 78f59a6e-2cde-498c-9ee3-03b3d9ab826c
-                        rowNumber: 1
-                        rowData:
-                          mappings:
-                            emp_name:
-                              excel_column: 성명
-                              value: 이승희
-                            emp_age:
-                              excel_column: 연령
-                              value: 28
-                            oee_rate:
-                              excel_column: A라인설비효율(%)
-                              value: 85.5
-                          meta_info:
-                            total_columns: 3
-                            has_error: false
-                      - dataId: 2
-                        companyId: 10
-                        fileId: 95e28a6q-2aln-150m-0ao7-03b3a1bk108v
-                        rowNumber: 2
-                        rowData:
-                          mappings:
-                            emp_name:
-                              excel_column: 성명
-                              value: 구담욱
-                            emp_age:
-                              excel_column: 연령
-                              value: 32
-                            oee_rate:
-                              excel_column: A라인설비효율(%)
-                              value: 91.2
-                          meta_info:
-                            total_columns: 3
-                            has_error: false
-      operationId: post-api-v1-files-upload
-      description: "설명: 대시보드 분석용 실적/품질 파일 업로드\r\n\r\nResponse: 업로드 완료된 OriginalFile 정보\r\n\r\n*반정규화 진행*"
+      tags:
+        - file-controller
+      operationId: upload
       requestBody:
         content:
           multipart/form-data:
@@ -375,372 +73,495 @@ paths:
               properties:
                 file:
                   type: string
-                  x-stoplight:
-                    id: o1lu2z5giwen7
                   format: binary
-                title:
-                  type: string
-                  x-stoplight:
-                    id: lwq8aaz4rexeu
-            examples:
-              Example 1:
-                value:
-                  file: <example binary data here...>
-                  title: A라인_프레스설비_정비가이드북.pdf
+              required:
+                - file
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileUploadResponseDto"
+  /api/v1/chat/sessions/{sessionId}/ask:
+    post:
+      tags:
+        - chat-controller
+      operationId: askToLlm
       parameters:
-        - schema:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
             type: string
-          in: header
-          name: Authorization
-          description: JWT
-    parameters: [ ]
-servers:
-  # Added by API Auto Mocking Plugin
-  - description: SwaggerHub API Auto Mocking
-    url: 'https://virtserver.swaggerhub.com/yju/MES_AI_ChatBot_API/1.0.0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserQuestionDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResponseDto"
+  /api/v1/chat/sessionrooms:
+    post:
+      tags:
+        - chat-controller
+      operationId: createChatSession
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatSessionRequestDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/ChatSessionResponseDto"
+  /api/v1/admin/users:
+    post:
+      tags:
+        - join-controller
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinRequestDTO"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            'text/plain':
+              schema:
+                type: string
+  /api/v1/users/{target}:
+    delete:
+      tags:
+        - user-controller
+      operationId: deleteUser
+      parameters:
+        - name: target
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            'text/plain':
+              schema:
+                type: string
+    patch:
+      tags:
+        - user-controller
+      operationId: updateRole
+      parameters:
+        - name: target
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            'text/plain':
+              schema:
+                type: string
+  /api/v1/users/me:
+    get:
+      tags:
+        - user-controller
+      operationId: getMyInfo
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/UserInfoResponseDTO"
+  /api/v1/users/:
+    get:
+      tags:
+        - user-controller
+      operationId: getUserForAdmin
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserInfoResponseDTO"
+  /api/v1/password/token/{token}:
+    get:
+      tags:
+        - email-controller
+      operationId: verifyToken
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: boolean
+  /api/v1/chat/sessions/{sessionId}/histories:
+    get:
+      tags:
+        - chat-controller
+      operationId: getChatHistories
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatHistory"
+  /api/v1/files/delete/{fileId}:
+    delete:
+      tags:
+        - file-controller
+      operationId: delete
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/FileDeleteResponseDto"
+  /api/v1/login:
+    post:
+      tags:
+        - login-filter
+      operationId: post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: integer
+                  format: int64
+                  example: 0
+                employeeId:
+                  type: integer
+                  format: int64
+                  example: 0
+                password:
+                  type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: object
+                properties:
+                  refreshToken:
+                    type: string
 components:
   schemas:
-    UserMember:
-      type: object
-      required:
-        - employeeId
-        - companyId
-        - userName
-        - companyEmail
-        - roleCode
-        - userStatusCode
-      properties:
-        employeeId:
-          type: integer
-          x-stoplight:
-            id: n1hcw3wsp33c7
-        companyId:
-          type: integer
-        userName:
-          type: string
-          x-stoplight:
-            id: vjt8m3jp18d0u
-        companyEmail:
-          type: string
-          x-stoplight:
-            id: kmobom5l0dmnt
-          format: email
-        roleCode:
-          type: string
-          x-stoplight:
-            id: 92hcphdzsoc0o
-        userStatusCode:
-          type: string
-          x-stoplight:
-            id: bajry1qmcli7f
-        authCode:
-          type: integer
-          x-stoplight:
-            id: 9utsbbjl0dtgw
-        authExpiredAt:
-          type: string
-          x-stoplight:
-            id: goig56ouos48e
-          format: date-time
-        createdAt:
-          type: string
-          x-stoplight:
-            id: 7y8si4cyg798c
-          format: date-time
-    ChatSession:
-      title: ChatSession
-      type: object
-      required:
-        - sessionId
-        - employeeId
-        - companyId
-        - sessionTitle
-      properties:
-        sessionId:
-          type: string
-          x-stoplight:
-            id: 8528i6ffqexu6
-        employeeId:
-          type: integer
-          x-stoplight:
-            id: qu7muamljo7ue
-        companyId:
-          type: integer
-        sessionTitle:
-          type: string
-          x-stoplight:
-            id: 6w641pfyrtrj5
-        createdAt:
-          type: string
-          x-stoplight:
-            id: k6gxwg0e0esiv
-          format: date-time
-    NewChatSession:
-      title: ChatSession
+    PasswordUpdateRequestDTO:
       type: object
       properties:
-        title:
+        token:
           type: string
-    OriginalFile:
-      title: OriginalFile
+        newPassword:
+          type: string
+    PasswordResetRequestDTO:
       type: object
-      required:
-        - fileId
-        - companyId
-        - employeeId
-        - originName
-        - saveFileName
-        - fileType
-        - fileDataPath
-      properties:
-        fileId:
-          type: string
-          x-stoplight:
-            id: wq8kbg2h8ayt7
-        companyId:
-          type: integer
-        employeeId:
-          type: integer
-          x-stoplight:
-            id: ix6kp5l2hca8o
-        originName:
-          type: string
-          x-stoplight:
-            id: d5dsf3aca2a68
-        saveFileName:
-          type: string
-          x-stoplight:
-            id: sjeg4jbztdr5l
-        fileType:
-          type: string
-          x-stoplight:
-            id: s40r9i87az99z
-        fileDataPath:
-          type: string
-          x-stoplight:
-            id: deg04r6qb3uzt
-          format: binary
-        uploadedAt:
-          type: string
-          x-stoplight:
-            id: 0a2b4mcu0dy2m
-          format: date-time
-    CredentialsNosql:
-      title: CredentialsNosql
-      type: object
-      required:
-        - id
-        - accessToken
-        - refreshToken
-      properties:
-        id:
-          type: string
-          x-stoplight:
-            id: 1le5dwl1znbnt
-        accessToken:
-          type: string
-          x-stoplight:
-            id: bjrncsy01mby8
-        refreshToken:
-          type: string
-          x-stoplight:
-            id: b87japbg87ps2
-    Companies(Update):
-      title: Companies
-      type: object
-      required:
-        - companyId
-        - company_name
       properties:
         companyId:
-          type: integer
-        company_name:
-          type: string
-        createAt:
-          type: string
-          format: date-time
-    ProductionPerformance:
-      title: ProductionPerformance
-      type: object
-      required:
-        - prodId
-        - fileId
-        - workDate
-        - lineCode
-        - itemName
-        - targetQty
-        - goodQty
-      properties:
-        prodId:
-          type: integer
-          x-stoplight:
-            id: pele4zxvtsgf0
-        fileId:
-          type: integer
-          x-stoplight:
-            id: 0k4v8yd74r2gu
-        workDate:
-          type: string
-          x-stoplight:
-            id: rbncdioqlw0gw
-          format: date
-        lineCode:
-          type: string
-          x-stoplight:
-            id: l343vmkk51n2l
-        itemName:
-          type: string
-          x-stoplight:
-            id: g2hlef0nshoot
-        targetQty:
-          type: integer
-          x-stoplight:
-            id: 6c3kog57x4aah
-        goodQty:
-          type: integer
-          x-stoplight:
-            id: jgm9c47akkq4f
-        createdAt:
-          type: string
-          x-stoplight:
-            id: 22bhewcm9q263
-          format: date-time
-      description: ''
-    ChatHistoriesNosql:
-      title: chatHistoriesNosql
-      type: object
-      required:
-        - id
-        - message
-        - role
-      properties:
-        id:
-          type: string
-          x-stoplight:
-            id: p6fvc8l1ms3g4
-        chatroomId:
-          type: string
-          x-stoplight:
-            id: 86mg8n3lzzhvt
-        message:
-          type: string
-          x-stoplight:
-            id: 8ti1zuwhokr0f
-          description: 오늘 상반기 생산 실적 목표치 달성률을 알려줘.
-        recordedAt:
-          type: string
-          x-stoplight:
-            id: 1a530xy17fjgp
-          format: date-time
-        role:
-          type: string
-          x-stoplight:
-            id: 1zslj5d533v3i
-    ColumnCodes(Update):
-      title: ColumnCodes
-      type: object
-      required:
-        - companyId
-        - excelColumnName
-        - standardColumnCode
-        - dataType
-      properties:
-        columnCodeId:
           type: integer
           format: int64
+        employeeId:
+          type: integer
+          format: int64
+        email:
+          type: string
+    Company:
+      type: object
+      properties:
         companyId:
           type: integer
-        excelColumnName:
-          type: string
-        standardColumnCode:
-          type: string
-        dataType:
+          format: int64
+        companyName:
           type: string
         createdAt:
           type: string
           format: date-time
-    UploadDataRows(Update):
-      title: UploadDataDetails
+    FileMetadata:
       type: object
-      required:
-        - companyId
-        - fileId
-        - rowNumber
-        - rowData
+      properties:
+        fileId:
+          type: string
+        companyId:
+          $ref: "#/components/schemas/Company"
+        employeeId:
+          $ref: "#/components/schemas/UserMember"
+        originName:
+          type: string
+        fileType:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+    FileUploadResponseDto:
+      type: object
+      properties:
+        message:
+          type: string
+        fileData:
+          $ref: "#/components/schemas/FileMetadata"
+        parsedData:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadDataDetailsDto"
+    GrantedAuthority:
+      type: object
+      properties:
+        authority:
+          type: string
+    UploadDataDetailsDto:
+      type: object
       properties:
         dataId:
           type: integer
-          format: int64
+          format: int32
         companyId:
           type: integer
+          format: int64
         fileId:
-          type: integer
+          type: string
         rowNumber:
           type: integer
+          format: int32
         rowData:
           type: string
         createdAt:
           type: string
           format: date-time
-    QualityPerformance:
-      title: QualityPerformance
+    UserMember:
       type: object
-      required:
-        - qualityId
-        - fileId
-        - inspectDate
-        - lineCode
-        - totalQty
-        - defectQty
       properties:
-        qualityId:
+        employeeId:
           type: integer
-          x-stoplight:
-            id: hrto18mfxclko
-        fileId:
-          type: integer
-          x-stoplight:
-            id: zunowhr98iuo5
-        inspectDate:
+          format: int64
+        companyId:
+          $ref: "#/components/schemas/Company"
+        username:
           type: string
-          x-stoplight:
-            id: 3ao77zqpy1wdq
-          format: date
-        lineCode:
+        password:
           type: string
-          x-stoplight:
-            id: 934ilwd7coujs
-        itemName:
+        companyEmail:
           type: string
-          x-stoplight:
-            id: gv7rpe7vb7v06
-        totalQty:
-          type: integer
-          x-stoplight:
-            id: 6yi562zx84zrs
-        defectQty:
-          type: integer
-          x-stoplight:
-            id: w0p9ql8rb8uuy
-        defectType:
+        roleCode:
           type: string
-          x-stoplight:
-            id: lghn3o71lcvj1
-        createAt:
+          enum:
+            - ROLE_MASTER
+            - ROLE_MANAGER
+            - ROLE_USER
+        createdAt:
           type: string
-          x-stoplight:
-            id: 9umcine8hgtts
           format: date-time
-    login:
-      title: login
+        authorities:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantedAuthority"
+        accountNonLocked:
+          type: boolean
+        accountNonExpired:
+          type: boolean
+        credentialsNonExpired:
+          type: boolean
+        enabled:
+          type: boolean
+    UserQuestionDto:
       type: object
-      required:
-        - id
-        - passwd
       properties:
+        message:
+          type: string
+    AskResponseDto:
+      type: object
+      properties:
+        chatId:
+          type: string
+        companyId:
+          type: integer
+          format: int64
+        employeeId:
+          type: integer
+          format: int64
+        sessionId:
+          type: string
+        message:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+        role:
+          type: string
+    ChatSessionRequestDto:
+      type: object
+      properties:
+        title:
+          type: string
+    ChatSessionResponseDto:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        companyId:
+          type: integer
+          format: int64
+        employeeId:
+          type: integer
+          format: int64
+        sessionTitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    JoinRequestDTO:
+      type: object
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        employeeId:
+          type: integer
+          format: int64
+        password:
+          type: string
+          minLength: 1
+          pattern: "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[@$!%*#?&])[A-Za-z0-9@$!%*#?&]{8,20}$"
+        username:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        role:
+          type: string
+          enum:
+            - ROLE_MASTER
+            - ROLE_MANAGER
+            - ROLE_USER
+      required:
+        - companyId
+        - email
+        - employeeId
+        - password
+        - role
+        - username
+    UserInfoResponseDTO:
+      type: object
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        employeeId:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - ROLE_MASTER
+            - ROLE_MANAGER
+            - ROLE_USER
+        companyName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ChatHistory:
+      type: object
+      properties:
+        chatId:
+          type: string
+        companyId:
+          $ref: "#/components/schemas/Company"
+        employeeId:
+          $ref: "#/components/schemas/UserMember"
+        sessionId:
+          $ref: "#/components/schemas/ChatSession"
+        message:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+        role:
+          type: string
+        new:
+          type: boolean
         id:
           type: string
-        passwd:
+    ChatSession:
+      type: object
+      properties:
+        sessionId:
           type: string
-          x-stoplight:
-            id: iojlmnslbuy7o
+        companyId:
+          $ref: "#/components/schemas/Company"
+        employeeId:
+          $ref: "#/components/schemas/UserMember"
+        sessionTitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    FileDeleteResponseDto:
+      type: object
+      properties:
+        fileId:
+          type: string
+        message:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time

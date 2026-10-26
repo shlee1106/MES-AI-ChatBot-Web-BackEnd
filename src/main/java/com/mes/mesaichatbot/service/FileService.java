@@ -36,6 +36,7 @@ public class FileService {
     private final UserService userService;
     private final DocumentService documentService;
 
+    @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt)
             throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException {
         // UUID 발급.
@@ -54,11 +55,10 @@ public class FileService {
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(), requestedAt);
 
-        // 업로드 파일의 메타데이터를 MySQL로 전송하는 코드 작성
+        // 업로드 파일의 메타데이터를 MySQL로 전송하는 코드
         fileMetadataRepository.save(originalFile);
 
         // 업로드된 문서를 MongoDB에 저장.
-        // 해당 함수는 비동기이므로 백그라운드에서 실행됨.
         documentService.saveToVectorStore(parsedData, originalFile.getFileType());
         // DTO 반환.
         return FileUploadResponseDto.ok(originalFile, parsedData);

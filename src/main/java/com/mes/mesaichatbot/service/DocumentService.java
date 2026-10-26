@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,10 +15,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 문서를 파싱합니다.
@@ -75,75 +72,45 @@ public class DocumentService {
         }
     }
 
-    // 문서를 비동기로 MongoDB에 저장.
-    @Async("saveToVectorStore")
-    public void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType) {
+    // 문서를 MongoDB에 저장.
+    public void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType)
+            throws IllegalStateException {
         LlmChunkingService llmChunkingService = llmChunkingServiceProvider.getIfAvailable();
         VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
 
         if (llmChunkingService == null || vectorStore == null) {
-            log.warn("VectorStore 또는 LLM을 사용할 수 없습니다. 실행을 취소합니다.");
-            return;
+            throw new IllegalStateException("VectorStore 또는 LLM을 사용할 수 없습니다.");
         }
 
-        CompletableFuture.runAsync(() -> {
-                    log.info("Saving to vector store...");
-                    List<Document> data;
+        log.info("Saving to vector store...");
+        List<Document> data;
 
-                    // CSV는 청크하지 않고 그대로 매핑 후 저장
-                    if (fileType.equalsIgnoreCase("csv")) {
-                        data = new ArrayList<>();
-                        for (int i = 0; i < uploadDataDetailsDto.size(); i++) {
-                            String content = uploadDataDetailsDto.get(i).rowData();
+        // CSV는 청크하지 않고 그대로 매핑 후 저장
+        if (fileType.equalsIgnoreCase("csv")) {
+            data = new ArrayList<>();
+            for (int i = 0; i < uploadDataDetailsDto.size(); i++) {
+                UploadDataDetailsDto value = uploadDataDetailsDto.get(i);
+                String content = value.rowData();
 
-                            Map<String, Object> metadata =
-                                    new HashMap<>();
-
-
-                            metadata.put(
-                                    "companyId",
-                                    uploadDataDetailsDto.get(i).companyId()
-                            );
-
-                            metadata.put(
-                                    "fileId",
-                                    uploadDataDetailsDto.get(i).fileId()
-                            );
-
-                            metadata.put(
-                                    "rowNumbers",
-                                    uploadDataDetailsDto.get(i).rowNumber()
-                            );
-
-                            metadata.put(
-                                    "startRowNumber",
-                                    0
-                            );
-
-                            metadata.put(
-                                    "endRowNumber",
-                                    uploadDataDetailsDto.size()
-                            );
-
-                            data.add(new Document(
-                                    String.format("doc-%s-%s", uploadDataDetailsDto.get(i).fileId(), "chunk-%03d".formatted(i + 1)),
-                                    content,
-                                    metadata
-                            ));
-                        }
-                    } else {
-                        // 청크 시도
-                        data = llmChunkingService.chunk(uploadDataDetailsDto);
-                    }
-                    // 저장 시도
-                    vectorStore.add(data);
-                }).exceptionally(e -> {
-                    // 예외 발생 시 기록 후 중지
-                    log.error(String.valueOf(e));
-                    return null;
-                })
-                // 문제 없으면 Log 출력
-                .thenRun(() -> log.info("Save to vector store complete."));
+                Map<String, Object> metadata = Map.of(
+                        "companyId", value.companyId(),
+                        "fileId", value.fileId(),
+                        "rowNumbers", value.rowNumber(),
+                        "startRowNumber", 0,
+                        "endRowNumber", uploadDataDetailsDto.size()
+                );
+                data.add(new Document(
+                        String.format("doc-%s-%s", value.fileId(), "chunk-%03d".formatted(i + 1)),
+                        content,
+                        metadata
+                ));
+            }
+        } else {
+            // 청크 시도
+            data = llmChunkingService.chunk(uploadDataDetailsDto);
+        }
+        // 저장 시도
+        vectorStore.add(data);
     }
 
     /**

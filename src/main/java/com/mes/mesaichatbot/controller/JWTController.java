@@ -18,8 +18,8 @@ public class JWTController {
     private final RefreshService refreshService;
 
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<String> refresh(@CookieValue("refreshToken") String refreshToken) {
-        if (refreshToken == null) {
+    public ResponseEntity<String> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
             return new ResponseEntity<>("Refresh Token이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED);
         }
 

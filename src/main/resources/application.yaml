@@ -76,5 +76,4 @@ management:
     mail:
       enabled: false
 app:
-  frontend-hostname: http://localhost:3000
-  
+  frontend-hostname: ${HOSTNAME:http://localhost:3000}

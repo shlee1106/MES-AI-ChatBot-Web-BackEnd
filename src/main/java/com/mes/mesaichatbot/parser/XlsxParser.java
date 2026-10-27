@@ -1,6 +1,7 @@
 package com.mes.mesaichatbot.parser;
 
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
+import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -16,16 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@AllArgsConstructor
 public class XlsxParser implements DocumentParser {
     private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
-
-    public XlsxParser(Long companyId, String fileId, LocalDateTime createdAt) {
-        this.companyId = companyId;
-        this.fileId = fileId;
-        this.createdAt = createdAt;
-    }
 
     @Override
     public boolean supports(String filename) {

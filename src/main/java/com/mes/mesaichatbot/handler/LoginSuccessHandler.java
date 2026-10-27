@@ -4,9 +4,9 @@ package com.mes.mesaichatbot.handler;
 import com.mes.mesaichatbot.domain.jwt.entity.RefreshEntity;
 import com.mes.mesaichatbot.domain.jwt.repository.RefreshRepository;
 import com.mes.mesaichatbot.util.JWTUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -18,18 +18,15 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
-    public LoginSuccessHandler(
-            JWTUtil jwtUtil,
-            RefreshRepository refreshRepository
-    ) {
+
+    public LoginSuccessHandler(JWTUtil jwtUtil, RefreshRepository refreshRepository) {
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
     }
 
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-
+    public void onAuthenticationSuccess(@NonNull HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         String username = authentication.getName();
         String role = authentication.getAuthorities().iterator().next().getAuthority();
 

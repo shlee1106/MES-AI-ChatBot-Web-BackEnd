@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.filter.GenericFilterBean;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -35,18 +36,18 @@ public class CustomLogoutFilter extends GenericFilterBean {
         doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
     }
 
-    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException{
+    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
 
         // [경로 검사] 프론트엔드가 정확히 "/api/v1/logout" 경로로 요청했는지 확인
         String requestUri = request.getRequestURI();
-        if(!requestUri.equals("/api/v1/logout")) {
+        if (!requestUri.equals("/api/v1/logout")) {
             // 로그아웃 요청이 아니면 이 필터는 아무 일 하지 않고 다음 필터로 통과
             filterChain.doFilter(request, response);
             return;
         }
 
         // [메소드 검사] 로그아웃은 반드시 POST 방식으로만 처리
-        if(!request.getMethod().equals("POST")) {
+        if (!request.getMethod().equals("POST")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -55,14 +56,15 @@ public class CustomLogoutFilter extends GenericFilterBean {
         String refresh = null;
 
         try {
-            Map<String, String> bodyMap = objectMapper.readValue(request.getInputStream(), Map.class);
+            Map<String, String> bodyMap = objectMapper.readValue(request.getInputStream(), new TypeReference<>() {
+            });
             refresh = bodyMap.get("refreshToken");
-        } catch (Exception e){
+        } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
 
         // 애초에 RefreshToken이 없다면 로그아웃할 것도 없으므로 400 에러 반환
-        if(refresh == null) {
+        if (refresh == null) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -74,12 +76,12 @@ public class CustomLogoutFilter extends GenericFilterBean {
             String tokenType = claims.get("tokenType", String.class);
 
             // AccessToken등 엉뚱한 토큰 가져오면 차단
-            if(!"REFRESH".equals(tokenType)) {
+            if (!"REFRESH".equals(tokenType)) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
         } catch (ExpiredJwtException e) {
-          // [핵심] 토큰의 기한이 이미 만료되었더라도 DB에서 지워야 하므로 통과
+            // [핵심] 토큰의 기한이 이미 만료되었더라도 DB에서 지워야 하므로 통과
 
         } catch (Exception e) {
             // 서명이 조작된 토큰이라면 400에러 반환
@@ -90,7 +92,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
         // [DB(Redis) 삭제] 백엔드 저장소에 해당 토큰이 남았는지 확인하고 있다면 영구 삭제
         // 해당 과정을 거쳐야 해커가 훔쳐간 토큰을 나중에 몰래 재발급 시도 원천 차단
-        Boolean isExist = refreshRepository.existsById(refresh);
+        boolean isExist = refreshRepository.existsById(refresh);
         if (isExist) {
             refreshRepository.deleteById(refresh);
         }

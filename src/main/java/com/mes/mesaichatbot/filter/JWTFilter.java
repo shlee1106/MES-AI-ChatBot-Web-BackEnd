@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,7 +42,7 @@ public class JWTFilter extends OncePerRequestFilter {
      * 프론트엔드가 보낸 Access Token의 위조 및 만료 여부를 꼼꼼히 검사하고,
      * 통과 시 SecurityContext에 인증 정보(방문증)를 걸어둠.
      */
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         // 프론트엔드가 보낸 요청(Header)에서 "Authorization"키에 담긴 값 꺼냄
         String authorization = request.getHeader("Authorization");

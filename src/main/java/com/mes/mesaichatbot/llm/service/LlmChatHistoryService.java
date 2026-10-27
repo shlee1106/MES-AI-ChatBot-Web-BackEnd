@@ -29,9 +29,8 @@ public class LlmChatHistoryService {
     /**
      * 대화 내역을 UUID로 구분하여 저장하는 변수
      */
-    //TODO 대화내역 회사회원 관계없이 다 저장하는데 필요한 부분인지 체크
     @Getter
-    public final HashMap<UUID, ArrayList<Message>> chatHistories = new HashMap<>();
+    private final HashMap<UUID, ArrayList<Message>> chatHistories = new HashMap<>();
     //인터페이스 메소드 사용을 위한 객체생성
     private final ChatHistoryRepository chatHistoryRepository;
     private final ChatSessionRepository chatSessionRepository;
@@ -48,7 +47,7 @@ public class LlmChatHistoryService {
 
         for (var chatId : sessionRows) {
             // 해당 대화방이 미존재한다면
-            if (!chatHistories.containsKey(chatId)) {
+            if (!chatHistories.containsKey(UUID.fromString(chatId.getSessionId()))) {
                 // 새로 리스트 만들어서 삽입
                 chatHistories.put(UUID.fromString(chatId.getSessionId()), new ArrayList<>());
             }

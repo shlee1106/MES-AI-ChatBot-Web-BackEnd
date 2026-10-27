@@ -2,6 +2,7 @@ package com.mes.mesaichatbot.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
+import lombok.AllArgsConstructor;
 import org.apache.poi.xslf.usermodel.*;
 import org.springframework.util.StringUtils;
 
@@ -15,19 +16,11 @@ import java.util.Objects;
 /**
  * PPTX 파일을 전담하여 파싱하는 클래스
  */
+@AllArgsConstructor
 public class PptxParser implements DocumentParser {
-
-    //region 필요한 데이터 복사
     private final Long companyId;
     private final String fileId;
     private final LocalDateTime createdAt;
-
-    public PptxParser(Long companyId, String fileId, LocalDateTime createdAt) {
-        this.companyId = companyId;
-        this.fileId = fileId;
-        this.createdAt = createdAt;
-    }
-    //endregion
 
     @Override
     public boolean supports(String filename) {

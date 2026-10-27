@@ -12,6 +12,6 @@ public record ChatHistoryResponseDto(String chatId, Long companyId, Long employe
     }
 
     public static List<ChatHistoryResponseDto> from(List<ChatHistory> histories) {
-        return histories.parallelStream().map(history -> new ChatHistoryResponseDto(history.getChatId(), history.getCompanyId().getCompanyId(), history.getEmployeeId().getEmployeeId(), history.getSessionId().getSessionId(), history.getMessage(), history.getRecordedAt(), history.getRole())).toList();
+        return histories.parallelStream().map(ChatHistoryResponseDto::from).toList();
     }
 }

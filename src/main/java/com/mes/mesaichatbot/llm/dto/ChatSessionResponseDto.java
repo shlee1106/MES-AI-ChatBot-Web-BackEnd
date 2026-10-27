@@ -12,8 +12,6 @@ public record ChatSessionResponseDto(String sessionId, Long companyId, Long empl
     }
 
     public static List<ChatSessionResponseDto> from(List<ChatSession> sessions) {
-        return sessions.parallelStream().map(session ->
-                new ChatSessionResponseDto(session.getSessionId(), session.getCompanyId().getCompanyId(), session.getEmployeeId().getEmployeeId(), session.getSessionTitle(), session.getCreatedAt())
-        ).toList();
+        return sessions.parallelStream().map(ChatSessionResponseDto::from).toList();
     }
 }

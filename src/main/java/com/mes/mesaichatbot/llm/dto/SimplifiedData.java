@@ -28,6 +28,6 @@ public record SimplifiedData(int dataId, int rowNumber, String rowData) {
      * @return 새 {@link SimplifiedData} 객체를 담은 {@link List}.
      */
     public static List<SimplifiedData> from(List<UploadDataDetailsDto> uploadDataDetailsDto) {
-        return uploadDataDetailsDto.parallelStream().map(d -> new SimplifiedData(d.dataId(), d.rowNumber(), d.rowData())).toList();
+        return uploadDataDetailsDto.parallelStream().map(SimplifiedData::from).toList();
     }
 }

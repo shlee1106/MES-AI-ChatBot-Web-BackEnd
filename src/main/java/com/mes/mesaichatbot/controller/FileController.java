@@ -1,6 +1,8 @@
 package com.mes.mesaichatbot.controller;
 
+import com.mes.mesaichatbot.domain.user.service.UserService;
 import com.mes.mesaichatbot.dto.FileDeleteResponseDto;
+import com.mes.mesaichatbot.dto.FileResponseDto;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.service.FileService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 파일 관련 작업을 처리하는 RestController.
@@ -27,6 +30,21 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class FileController {
     private final FileService fileService;
+    private final UserService userService;
+
+    /**
+     * 파일 목록을 조회합니다.
+     *
+     * @return JSON 형태의 {@link FileResponseDto} 객체 리스트.
+     */
+    @GetMapping("/")
+    public ResponseEntity<List<FileResponseDto>> getFiles() {
+        try {
+            return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(userService.getCurrentUserEntity())));
+        } catch (UsernameNotFoundException | NullPointerException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
 
     /**
      * 파일 업로드를 처리합니다.

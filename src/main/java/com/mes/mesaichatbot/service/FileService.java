@@ -36,6 +36,28 @@ public class FileService {
     private final UserService userService;
     private final DocumentService documentService;
 
+    /**
+     * 해당 사용자의 파일 목록을 반환합니다.
+     *
+     * @param member 사용자 정보.
+     * @return {@link FileMetadata} 리스트 형식의 파일 목록.
+     */
+    @Transactional(readOnly = true)
+    public List<FileMetadata> getFiles(UserMember member) {
+        return fileMetadataRepository.findAllByEmployeeId(member);
+    }
+
+    /**
+     * 파일을 업로드합니다.
+     *
+     * @param file        업로드할 파일.
+     * @param requestedAt 요청 시간.
+     * @return 업로드된 파일 정보.
+     * @throws IOException               파일 처리 중 오류 발생.
+     * @throws NotOfficeXmlFileException 업로드된 파일이 Office XML 형식이 아닐 경우.
+     * @throws NullPointerException      인증 정보를 찾을 수 없을 경우.
+     * @throws UsernameNotFoundException 사용자 정보를 찾을 수 없을 경우.
+     */
     @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt)
             throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException {

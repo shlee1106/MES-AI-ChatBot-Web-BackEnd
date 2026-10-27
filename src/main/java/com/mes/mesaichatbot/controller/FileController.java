@@ -37,7 +37,7 @@ public class FileController {
      *
      * @return JSON 형태의 {@link FileResponseDto} 객체 리스트.
      */
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<FileResponseDto>> getFiles() {
         try {
             // 파일 목록을 조회하여 DTO 형태로 반환

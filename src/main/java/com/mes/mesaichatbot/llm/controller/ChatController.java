@@ -7,6 +7,7 @@ import com.mes.mesaichatbot.domain.user.service.UserService;
 import com.mes.mesaichatbot.llm.dto.*;
 import com.mes.mesaichatbot.llm.service.LlmChatService;
 import com.mes.mesaichatbot.llm.service.LlmChatSessionService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ import java.util.List;
  * LLM과의 대화를 담당하는 RestController.
  */
 @Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/chat")
 public class ChatController {
@@ -30,12 +32,6 @@ public class ChatController {
     private final UserService userService;
     private final LlmChatSessionService llmChatSessionService;
     private final LlmChatService llmChatService;
-
-    public ChatController(UserService userService, LlmChatSessionService llmChatSessionService, LlmChatService llmChatService) {
-        this.userService = userService;
-        this.llmChatSessionService = llmChatSessionService;
-        this.llmChatService = llmChatService;
-    }
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
@@ -108,17 +104,28 @@ public class ChatController {
         }
     }
 
+    /**
+     * 채팅 세션을 삭제합니다.
+     *
+     * @param sessionId 삭제 대상 세션 ID.
+     * @return 응답 메시지.
+     */
     @DeleteMapping(value = "/sessions/{sessionId}")
     public ResponseEntity<String> deleteChatSession(@PathVariable String sessionId) {
         try {
+            // 현재 사용자 정보를 가져옴
             UserMember member = userService.getCurrentUserEntity();
+            // 삭제 시도
             llmChatSessionService.deleteChatSessions(sessionId, member);
             return ResponseEntity.ok("삭제되었습니다.");
         } catch (IllegalArgumentException e) {
+            // 세션을 찾을 수 없을 경우 404 반환
             return ResponseEntity.notFound().build();
-        } catch (org.springframework.security.access.AccessDeniedException e) {
+        } catch (AccessDeniedException e) {
+            // 본인의 세션이 아니면 403 반환
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (NullPointerException | UsernameNotFoundException e) {
+            // 인증되지 않은 사용자인 경우 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -132,8 +139,10 @@ public class ChatController {
     @GetMapping("/sessions")
     public ResponseEntity<List<ChatSessionResponseDto>> getChatSessions() {
         try {
+            // 대화 세션 불러오기
             return ResponseEntity.ok(ChatSessionResponseDto.from(llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
         } catch (NullPointerException | UsernameNotFoundException e) {
+            // 인증되지 않은 사용자인 경우 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

@@ -27,6 +27,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 파일 관련 서비스
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,6 +47,7 @@ public class FileService {
      */
     @Transactional(readOnly = true)
     public List<FileMetadata> getFiles(UserMember member) {
+        // 현재 사용자의 파일 목록 반환
         return fileMetadataRepository.findAllByEmployeeId(member);
     }
 

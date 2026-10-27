@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 이메일 관련 컨트롤러
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/password")
@@ -15,6 +18,12 @@ import org.springframework.web.bind.annotation.*;
 public class EmailController {
     private final PasswordResetService passwordResetService;
 
+    /**
+     * 비밀번호 재설정 이메일을 전송합니다.
+     *
+     * @param dto {@link PasswordResetRequestDTO} 사용자의 재설정 요청 DTO.
+     * @return {@link ResponseEntity<String>} 비밀번호 재설정 요청 결과.
+     */
     @PostMapping("/request")
     public ResponseEntity<String> requestResetEmail(@RequestBody PasswordResetRequestDTO dto) {
         // 이메일 전송 시도
@@ -28,17 +37,33 @@ public class EmailController {
         }
     }
 
+    /**
+     * 토큰 유효성 검증을 수행합니다.
+     *
+     * @param token 토큰
+     * @return {@link ResponseEntity<Boolean>} 토큰의 유효성 여부.
+     */
     @GetMapping("/token/{token}")
     public ResponseEntity<Boolean> verifyToken(@PathVariable String token) {
         try {
+            // 토큰의 유효성 검증
             passwordResetService.verifyTokenExists(token);
+
+            // 토큰이 유효하면 true 반환
             return ResponseEntity.ok(true);
         } catch (IllegalArgumentException e) {
+            // 토큰이 유효하지 않으면 404
             log.warn(String.valueOf(e));
             return ResponseEntity.notFound().build();
         }
     }
 
+    /**
+     * 토큰을 통해 비밀번호를 재설정합니다.
+     *
+     * @param dto {@link PasswordUpdateRequestDTO} 비밀번호 재설정 요청 DTO.
+     * @return {@link ResponseEntity<String>} 비밀번호 재설정 결과.
+     */
     @PostMapping("/update")
     public ResponseEntity<String> updatePassword(@RequestBody PasswordUpdateRequestDTO dto) {
         // 제공된 토큰이 없거나, 새 비밀번호가 없으면 400

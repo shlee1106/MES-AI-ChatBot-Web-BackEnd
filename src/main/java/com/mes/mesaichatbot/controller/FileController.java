@@ -40,8 +40,10 @@ public class FileController {
     @GetMapping("/")
     public ResponseEntity<List<FileResponseDto>> getFiles() {
         try {
+            // 파일 목록을 조회하여 DTO 형태로 반환
             return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(userService.getCurrentUserEntity())));
         } catch (UsernameNotFoundException | NullPointerException e) {
+            // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -62,8 +64,10 @@ public class FileController {
             FileUploadResponseDto dto = fileService.uploadFile(file, now);
             return ResponseEntity.ok(dto);
         } catch (IOException | NotOfficeXmlFileException | NullPointerException e) {
+            // 파일이 올바르지 않으면 400 반환
             return ResponseEntity.badRequest().body(new FileUploadResponseDto("파일이 올바르지 않습니다.", null, null));
         } catch (UsernameNotFoundException e) {
+            // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new FileUploadResponseDto("인증 정보가 올바르지 않습니다.", null, null));
         }
     }
@@ -83,12 +87,16 @@ public class FileController {
             // 완료응답 반환
             return ResponseEntity.ok(FileDeleteResponseDto.of(fileId));
         } catch (IllegalArgumentException e) {
+            // 파일이 존재하지 않으면 404 반환
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new FileDeleteResponseDto(null, e.getMessage(), null));
         } catch (AuthenticationCredentialsNotFoundException e) {
+            // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new FileDeleteResponseDto(null, "인증 정보가 올바르지 않습니다.", null));
         } catch (AccessDeniedException e) {
+            // 본인의 파일이 아닐 경우 403 반환
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new FileDeleteResponseDto(null, e.getMessage(), null));
         } catch (Exception e) {
+            // 예기치 못한 오류 발생 시 500 반환
             log.error("파일 삭제 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(new FileDeleteResponseDto(null, "삭제 중 예기치 못한 오류가 발생했습니다.", null));
         }

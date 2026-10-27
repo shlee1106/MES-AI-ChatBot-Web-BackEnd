@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 회원가입 관련 컨트롤러
+ */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -18,6 +21,12 @@ public class JoinController {
 
     private final UserService userService;
 
+    /**
+     * 사용자를 생성합니다.
+     *
+     * @param dto 사용자 생성 요청 DTO.
+     * @return 응답 메시지.
+     */
     @PostMapping("/admin/users")
     public ResponseEntity<String> createUser(@Valid @RequestBody JoinRequestDTO dto) { // [수정] 매개변수 타입 변경
         try {

@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * JWT 관련 컨트롤러
+ */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -17,8 +20,15 @@ public class JWTController {
 
     private final RefreshService refreshService;
 
+    /**
+     * Refresh Token을 통해 새 액세스 토큰을 발급합니다.
+     *
+     * @param refreshToken Refresh Token.
+     * @return 새 액세스 토큰.
+     */
     @PostMapping("/jwt/refresh")
     public ResponseEntity<String> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
+        // Refresh Token이 존재하지 않을 경우 401 Unauthorized 응답 반환.
         if (refreshToken == null || refreshToken.isBlank()) {
             return new ResponseEntity<>("Refresh Token이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED);
         }

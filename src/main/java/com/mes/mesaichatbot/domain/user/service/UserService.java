@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 사용자 관련 서비스
+ */
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
@@ -129,13 +132,23 @@ public class UserService implements UserDetailsService {
         return UserInfoResponseDTO.from(user);
     }
 
+    /**
+     * 현재 인증된 사용자의 정보를 반환합니다.
+     *
+     * @return {@link UserMember}
+     * @throws NullPointerException      인증되지 않음
+     * @throws UsernameNotFoundException 사용자 정보를 찾을 수 없음
+     */
     @Transactional(readOnly = true)
     public UserMember getCurrentUserEntity() throws NullPointerException, UsernameNotFoundException {
+        // 세션에서 사용자 정보를 가져옴
         String subject = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        // 사용자 정보에서 회사번호와 사원번호를 추출
         String[] parts = subject.split("_");
         Long companyId = Long.parseLong(parts[0]);
         Long employeeId = Long.parseLong(parts[1]);
 
+        // 사용자 엔티티 반환
         return userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
                 .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없음"));
     }
@@ -148,19 +161,24 @@ public class UserService implements UserDetailsService {
      */
     @Transactional(readOnly = true)
     public List<UserInfoResponseDTO> getUserForAdmin() throws NullPointerException {
+        // 인증 정보 취득
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentUserRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
         Long currentCompanyId = Long.parseLong(auth.getName().split("_")[0]);
 
+        // 반환 대상 사용자를 담은 리스트 생성
         List<UserMember> users;
 
         if ("ROLE_MASTER".equals(currentUserRole)) {
+            // 관리자의 경우 모든 사용자 삽입
             users = userRepository.findAll();
         } else {
+            // 일반 사용자의 경우 본사에 속한 사용자 삽입
             Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
             users = userRepository.findByCompanyId(myCompany);
         }
 
+        // DTO로 변환 후 반환
         return UserInfoResponseDTO.from(users);
     }
 

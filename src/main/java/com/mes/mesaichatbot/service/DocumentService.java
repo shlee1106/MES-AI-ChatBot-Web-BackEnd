@@ -72,7 +72,13 @@ public class DocumentService {
         }
     }
 
-    // 문서를 MongoDB에 저장.
+    /**
+     * 문서를 MongoDB에 저장.
+     *
+     * @param uploadDataDetailsDto 문서 정보
+     * @param fileType             파일 형식
+     * @throws IllegalStateException VectorStore 또는 LLM을 사용할 수 없음
+     */
     public void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType)
             throws IllegalStateException {
         LlmChunkingService llmChunkingService = llmChunkingServiceProvider.getIfAvailable();

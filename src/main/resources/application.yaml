@@ -75,5 +75,9 @@ management:
   health:
     mail:
       enabled: false
+  endpoint:
+    health:
+      show-details: when-authorized
+      roles: MASTER
 app:
   frontend-hostname: ${HOSTNAME:http://localhost:3000}

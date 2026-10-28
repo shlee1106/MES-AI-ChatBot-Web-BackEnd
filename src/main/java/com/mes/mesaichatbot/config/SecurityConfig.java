@@ -67,8 +67,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 요청을 허락할 프론트엔드 주소 (TODO: 배포 시 프론트 실제 도메인 주소로 반드시 변경!!!!)
-        config.setAllowedOriginPatterns(List.of("*")); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
+        // 요청을 허락할 프론트엔드 주소 (운영 도메인 및 로컬 개발 환경 허용)
+        config.setAllowedOrigins(List.of("https://mes.thepji.kro.kr", "http://localhost:3000"));
         //config.addAllowedOrigin("http://%s:3000".formatted(hostname)); // TODO: 추후 프론트엔드 서버 IP로 바꾸기
 
         // 허용할 HTTP 메서드(GET, POST, PUT 등등 모두 허용)
@@ -80,7 +80,7 @@ public class SecurityConfig {
         // 쿠키(RefreshToken)을 주고받을 수 있도록 허용(매우중요)
         config.setAllowCredentials(true);
 
-        // 프론트엔드의 axios가 응답 헤더에서 AccessToken을 읽을 수 있도록 허용
+        // 프론트엔드의 ky가 응답 헤더에서 AccessToken을 읽을 수 있도록 허용
         config.addExposedHeader("Authorization");
 
 
@@ -111,8 +111,9 @@ public class SecurityConfig {
     // [수정] throws Exception 추가
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
-                // JWT를 사용하므로 기본적 활성화 되는 CSRF 방어막과 기본 로그인 화면 끔
+                // JWT를 사용하므로 기본적 활성화 되는 CSRF 방어막과 기본 로그인 화면 끔,브라우저 기본 인증 팝업이나 불필요한 Basic Auth 시도를 차단
                 .csrf(AbstractHttpConfigurer::disable).formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 // 위에 정의한 CORS(통신 허락) 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         // 구역별 출입 규칙
@@ -127,6 +128,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
 
                 // 3. 권한별 접근 경로
+                .requestMatchers("/actuator/**").hasRole("MASTER") // Actuator 상세 엔드포인트는 최고 관리자 전용
                 .requestMatchers("/api/v1/admin/**").hasRole("MASTER") // 최고 관리자 전용
                 .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") // 중간 관리자 전용
                 .requestMatchers("/api/v1/user/**").hasRole("USER") // 일반 사원 전용

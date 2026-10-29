@@ -98,11 +98,8 @@ public class LlmChatService {
 
         // 문서 RAG 검색 도구 생성
         RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(VectorStoreDocumentRetriever.builder().similarityThreshold(0.5).vectorStore(vectorStore).build()).build();
-        // LLM 요청 객체 정의
-        ChatClient.CallResponseSpec response;
-
-        // LLM에 요청
-        response = chatClient.prompt().advisors(ragAdvisor).messages(messages).user(formattedQuestion).call();
+        // LLM 요청 객체 정의 및 요청
+        ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages).user(formattedQuestion).call();
 
         // 파일 업로드가 있을 경우의 코드. API 규격을 지키기 위해 제거.
 //        if (file == null || file.getContentType() == null || file.isEmpty()) {
@@ -122,10 +119,9 @@ public class LlmChatService {
         // 답변 시각 기록
         LocalDateTime respondedAt = LocalDateTime.now();
 
-        // LLM의 답변이 비어 있으면 500 반환
+        // LLM의 답변이 비어 있으면 예외
         if (llmAnswer == null || llmAnswer.isBlank()) {
             log.error("LLM이 답변에 실패했습니다. 답변이 비어 있습니다.");
-//            return ResponseEntity.internalServerError().build();
             throw new IllegalStateException("LLM이 답변에 실패했습니다. 답변이 비어 있습니다.");
         }
 

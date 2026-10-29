@@ -44,3 +44,6 @@ out/
 /out/
 .gradle/
 .idea/
+
+# dotenv file
+.env

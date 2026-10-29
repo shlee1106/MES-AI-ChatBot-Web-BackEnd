@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.filter.CharacterEncodingFilter;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,16 +32,16 @@ class EmailControllerTest {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new EmailController(service)).build();
+        mvc = MockMvcBuilders.standaloneSetup(new EmailController(service)).addFilters(new CharacterEncodingFilter("UTF-8", true)).build();
     }
 
     @Test
     @DisplayName("재설정 이메일 요청 시 성공 혹은 오류를 반환하는가?")
     void requestResetEmailReturnsSuccessAndValidationError() throws Exception {
         String body = mapper.writeValueAsString(new PasswordResetRequestDTO(1L, 2L, "person@example.com"));
-        assertThat(mvc.perform(post("/api/v1/password/request").contentType("application/json").content(body)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).isNotEmpty();
+        mvc.perform(post("/api/v1/password/request").contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(content().string("비밀번호 재설정 이메일이 성공적으로 발송되었습니다."));
         doThrow(new IllegalArgumentException("invalid")).when(service).sendResetEmail(any());
-        assertThat(mvc.perform(post("/api/v1/password/request").contentType("application/json").content(body)).andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString()).isEqualTo("invalid");
+        mvc.perform(post("/api/v1/password/request").contentType("application/json").content(body)).andExpect(status().isBadRequest()).andExpect(content().string("invalid"));
     }
 
     @Test

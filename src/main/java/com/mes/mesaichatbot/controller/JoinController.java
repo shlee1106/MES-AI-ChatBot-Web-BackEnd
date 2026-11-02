@@ -5,6 +5,7 @@ import com.mes.mesaichatbot.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,7 +28,7 @@ public class JoinController {
      * @param dto 사용자 생성 요청 DTO.
      * @return 응답 메시지.
      */
-    @PostMapping("/admin/users")
+    @PostMapping(path = "/admin/users", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> createUser(@Valid @RequestBody JoinRequestDTO dto) { // [수정] 매개변수 타입 변경
         try {
             userService.createUser(dto);

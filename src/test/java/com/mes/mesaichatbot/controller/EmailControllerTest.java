@@ -38,31 +38,59 @@ class EmailControllerTest {
     @Test
     @DisplayName("재설정 이메일 요청 시 성공 혹은 오류를 반환하는가?")
     void requestResetEmailReturnsSuccessAndValidationError() throws Exception {
-        String body = mapper.writeValueAsString(new PasswordResetRequestDTO(1L, 2L, "person@example.com"));
-        mvc.perform(post("/api/v1/password/request").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk()).andExpect(content().string("비밀번호 재설정 이메일이 성공적으로 발송되었습니다."));
+        String body = mapper.writeValueAsString(
+                new PasswordResetRequestDTO(1L, 2L, "person@example.com"));
+        mvc.perform(post("/api/v1/password/request").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                                                    .content(body))
+           .andExpect(status().isOk())
+           .andExpect(content().string("비밀번호 재설정 이메일이 성공적으로 발송되었습니다."));
 
         doThrow(new IllegalArgumentException("invalid")).when(service).sendResetEmail(any());
-        mvc.perform(post("/api/v1/password/request").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest()).andExpect(content().string("invalid"));
+        mvc.perform(post("/api/v1/password/request").with(csrf())
+                                                    .contentType(MediaType.APPLICATION_JSON).content(body))
+           .andExpect(status().isBadRequest())
+           .andExpect(content().string("invalid"));
     }
 
     @Test
     @DisplayName("토큰 검증 시 결과 혹은 오류를 반환하는가?")
     void verifiesTokenAndReturnsNotFoundWhenInvalid() throws Exception {
-        mvc.perform(get("/api/v1/password/token/good")).andExpect(status().isOk()).andExpect(content().string("true"));
+        mvc.perform(get("/api/v1/password/token/good"))
+           .andExpect(status().isOk())
+           .andExpect(content().string("true"));
+
         doThrow(new IllegalArgumentException()).when(service).verifyTokenExists("bad");
-        mvc.perform(get("/api/v1/password/token/bad")).andExpect(status().isNotFound()).andExpect(content().string(""));
+        mvc.perform(get("/api/v1/password/token/bad"))
+           .andExpect(status().isNotFound())
+           .andExpect(content().string(""));
     }
 
     @Test
     @DisplayName("비밀번호 변경 시 결과 혹은 오류를 반환하는가?")
     void updatesPasswordAndRejectsMissingFields() throws Exception {
         String valid = mapper.writeValueAsString(new PasswordUpdateRequestDTO("token", "secret"));
+
         String invalidToken = mapper.writeValueAsString(new PasswordUpdateRequestDTO(null, "abc"));
         String invalidPassword = mapper.writeValueAsString(new PasswordUpdateRequestDTO("x", " "));
-        mvc.perform(post("/api/v1/password/update").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(valid)).andExpect(status().isOk()).andExpect(content().string("비밀번호가 성공적으로 변경되었습니다."));
-        mvc.perform(post("/api/v1/password/update").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidToken)).andExpect(status().isBadRequest()).andExpect(content().string("토큰이 만료되었거나 존재하지 않습니다."));
-        mvc.perform(post("/api/v1/password/update").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidPassword)).andExpect(status().isBadRequest()).andExpect(content().string("비밀번호가 설정되지 않았습니다."));
-        doThrow(new IllegalArgumentException("expired")).when(service).updatePassword("bad", "secret");
-        mvc.perform(post("/api/v1/password/update").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(new PasswordUpdateRequestDTO("bad", "secret")))).andExpect(status().isBadRequest()).andExpect(content().string("expired"));
+        mvc.perform(post("/api/v1/password/update")
+                            .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(valid))
+           .andExpect(status().isOk())
+           .andExpect(content().string("비밀번호가 성공적으로 변경되었습니다."));
+        mvc.perform(post("/api/v1/password/update")
+                            .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidToken))
+           .andExpect(status().isBadRequest())
+           .andExpect(content().string("토큰이 만료되었거나 존재하지 않습니다."));
+        mvc.perform(post("/api/v1/password/update")
+                            .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidPassword))
+           .andExpect(status().isBadRequest())
+           .andExpect(content().string("비밀번호가 설정되지 않았습니다."));
+        doThrow(new IllegalArgumentException("expired"))
+                .when(service).updatePassword("bad", "secret");
+        mvc.perform(post("/api/v1/password/update")
+                            .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(
+                           mapper.writeValueAsString(
+                                   new PasswordUpdateRequestDTO("bad", "secret"))))
+           .andExpect(status().isBadRequest())
+           .andExpect(content().string("expired"));
     }
 }

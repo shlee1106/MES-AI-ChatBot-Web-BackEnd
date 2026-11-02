@@ -45,7 +45,7 @@ public class EmailController {
      * @param token 토큰
      * @return {@link ResponseEntity<Boolean>} 토큰의 유효성 여부.
      */
-    @GetMapping(path = "/token/{token}")
+    @GetMapping(path = "/token/{token}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Boolean> verifyToken(@PathVariable String token) {
         try {
             // 토큰의 유효성 검증

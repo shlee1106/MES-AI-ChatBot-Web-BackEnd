@@ -49,7 +49,8 @@ class ChatControllerTest {
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(new ChatController(userService, sessionService, chatService)).build();
         company = new Company(1L, "MES", now);
-        member = new UserMember(2L, company, "Kim", "pw", "k@example.com", UserRole.ROLE_USER, now);
+        member = new UserMember(2L, company, "Kim",
+                                "pw", "k@example.com", UserRole.ROLE_USER, now);
         session = new ChatSession("session-1", company, member, "Help", now);
         when(userService.getCurrentUserEntity()).thenReturn(member);
     }
@@ -57,37 +58,64 @@ class ChatControllerTest {
     @Test
     @DisplayName("질문 시 LLM의 답변 혹은 오류를 반환하는가?")
     void asksLlmWithMockedAnswerAndMapsBadRequestAndUnauthorized() throws Exception {
-        when(chatService.askToLlm(eq("session-1"), eq(member), any(), any())).thenReturn(new ChatHistory("chat-1", company, member, session, "mocked answer", now, "assistant"));
+        when(chatService.askToLlm(eq("session-1"), eq(member), any(), any()))
+                .thenReturn(
+                        new ChatHistory("chat-1", company, member, session,
+                                        "mocked answer", now, "assistant"));
         var body = mapper.writeValueAsString(new UserQuestionDto("질문"));
-        mvc.perform(post("/api/v1/chat/sessions/session-1/ask").contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.message").value("mocked answer"));
-        when(chatService.askToLlm(eq("session-1"), eq(member), any(), any())).thenThrow(new IllegalArgumentException());
-        mvc.perform(post("/api/v1/chat/sessions/session-1/ask").contentType("application/json").content(body)).andExpect(status().isBadRequest()).andExpect(content().string(""));
+        mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
+                            .contentType("application/json").content(body))
+           .andExpect(status().isOk()).andExpect(jsonPath("$.message")
+                                                         .value("mocked answer"));
+        when(chatService.askToLlm(eq("session-1"), eq(member), any(), any()))
+                .thenThrow(new IllegalArgumentException());
+        mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
+                            .contentType("application/json").content(body))
+           .andExpect(status().isBadRequest()).andExpect(content().string(""));
         when(userService.getCurrentUserEntity()).thenThrow(new UsernameNotFoundException("missing"));
-        mvc.perform(post("/api/v1/chat/sessions/session-1/ask").contentType("application/json").content(body)).andExpect(status().isUnauthorized()).andExpect(content().string(""));
+        mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
+                            .contentType("application/json").content(body))
+           .andExpect(status().isUnauthorized()).andExpect(content().string(""));
     }
 
     @Test
     @DisplayName("대화방 생성 시 결과 혹은 오류를 반환하는가?")
     void createsSessionAndMapsSessionErrors() throws Exception {
         when(sessionService.createChatSession(eq(member), any(), any())).thenReturn(session);
-        mvc.perform(post("/api/v1/chat/sessionrooms").contentType("application/json").content("{\"title\":\"Help\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.sessionId").value("session-1"));
+        mvc.perform(post("/api/v1/chat/sessionrooms").contentType("application/json")
+                                                     .content("{\"title\":\"Help\"}"))
+           .andExpect(status().isOk()).andExpect(jsonPath("$.sessionId").value("session-1"));
         when(sessionService.createChatSession(eq(member), any(), any())).thenThrow(new IllegalArgumentException());
-        mvc.perform(post("/api/v1/chat/sessionrooms").contentType("application/json").content("{\"title\":\"Help\"}")).andExpect(status().isBadRequest()).andExpect(content().string(""));
+        mvc.perform(post("/api/v1/chat/sessionrooms").contentType("application/json")
+                                                     .content("{\"title\":\"Help\"}"))
+           .andExpect(status().isBadRequest()).andExpect(content().string(""));
     }
 
     @Test
     @DisplayName("대화 기록 접근 시 결과 혹은 오류를 반환하는가?")
     void readsAndDeletesHistoryAndSessions() throws Exception {
-        when(sessionService.getChatHistories("session-1", member)).thenReturn(List.of(new ChatHistory("chat-1", company, member, session, "hello", now, "user")));
-        mvc.perform(get("/api/v1/chat/sessions/session-1/histories")).andExpect(status().isOk()).andExpect(jsonPath("$[0].message").value("hello"));
-        when(sessionService.getChatHistories("denied", member)).thenThrow(new AccessDeniedException("denied"));
-        mvc.perform(get("/api/v1/chat/sessions/denied/histories")).andExpect(status().isForbidden()).andExpect(content().string(""));
+        when(sessionService.getChatHistories("session-1", member)).thenReturn(
+                List.of(new ChatHistory("chat-1", company, member,
+                                        session, "hello", now, "user")));
+        mvc.perform(get("/api/v1/chat/sessions/session-1/histories")).andExpect(status().isOk())
+           .andExpect(jsonPath("$[0].message").value("hello"));
+        when(sessionService.getChatHistories("denied", member))
+                .thenThrow(new AccessDeniedException("denied"));
+        mvc.perform(get("/api/v1/chat/sessions/denied/histories")).andExpect(status().isForbidden())
+           .andExpect(content().string(""));
         when(sessionService.getChatSessions(member)).thenReturn(List.of(session));
-        mvc.perform(get("/api/v1/chat/sessions")).andExpect(status().isOk()).andExpect(jsonPath("$[0].sessionId").value("session-1"));
-        assertThat(mvc.perform(delete("/api/v1/chat/sessions/session-1")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).isNotEmpty();
-        doThrow(new AccessDeniedException("denied")).when(sessionService).deleteChatSessions("denied", member);
-        mvc.perform(delete("/api/v1/chat/sessions/denied")).andExpect(status().isForbidden()).andExpect(content().string("denied"));
-        doThrow(new IllegalArgumentException("missing")).when(sessionService).deleteChatSessions("missing", member);
-        mvc.perform(delete("/api/v1/chat/sessions/missing")).andExpect(status().isNotFound()).andExpect(content().string(""));
+        mvc.perform(get("/api/v1/chat/sessions")).andExpect(status().isOk())
+           .andExpect(jsonPath("$[0].sessionId").value("session-1"));
+        assertThat(mvc.perform(delete("/api/v1/chat/sessions/session-1"))
+                      .andExpect(status().isOk()).andReturn()
+                      .getResponse().getContentAsString()).isNotEmpty();
+        doThrow(new AccessDeniedException("denied")).when(sessionService)
+                                                    .deleteChatSessions("denied", member);
+        mvc.perform(delete("/api/v1/chat/sessions/denied")).andExpect(status().isForbidden())
+           .andExpect(content().string("denied"));
+        doThrow(new IllegalArgumentException("missing")).when(sessionService)
+                                                        .deleteChatSessions("missing", member);
+        mvc.perform(delete("/api/v1/chat/sessions/missing")).andExpect(status().isNotFound())
+           .andExpect(content().string(""));
     }
 }

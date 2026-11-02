@@ -62,7 +62,8 @@ class CustomLogoutFilterTest {
         assertThat(response.getStatus()).isEqualTo(400);
         assertThat(response.getContentAsString()).isEmpty();
         var nextResponse = new MockHttpServletResponse();
-        filter.doFilter(new MockHttpServletRequest("GET", "/other"), nextResponse, new MockFilterChain());
+        filter.doFilter(new MockHttpServletRequest("GET", "/other"),
+                        nextResponse, new MockFilterChain());
         assertThat(nextResponse.getStatus()).isEqualTo(200);
         assertThat(nextResponse.getContentAsString()).isEmpty();
         verifyNoInteractions(repository);

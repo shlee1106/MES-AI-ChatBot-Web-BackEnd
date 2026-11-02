@@ -5,6 +5,7 @@ import com.mes.mesaichatbot.domain.email.dto.PasswordUpdateRequestDTO;
 import com.mes.mesaichatbot.domain.email.serivce.PasswordResetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,8 @@ public class EmailController {
      * @param dto {@link PasswordResetRequestDTO} 사용자의 재설정 요청 DTO.
      * @return {@link ResponseEntity<String>} 비밀번호 재설정 요청 결과.
      */
-    @PostMapping("/request")
+    @PostMapping(path = "/request",
+            consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> requestResetEmail(@RequestBody PasswordResetRequestDTO dto) {
         // 이메일 전송 시도
         try {
@@ -43,7 +45,7 @@ public class EmailController {
      * @param token 토큰
      * @return {@link ResponseEntity<Boolean>} 토큰의 유효성 여부.
      */
-    @GetMapping("/token/{token}")
+    @GetMapping(path = "/token/{token}")
     public ResponseEntity<Boolean> verifyToken(@PathVariable String token) {
         try {
             // 토큰의 유효성 검증
@@ -64,7 +66,7 @@ public class EmailController {
      * @param dto {@link PasswordUpdateRequestDTO} 비밀번호 재설정 요청 DTO.
      * @return {@link ResponseEntity<String>} 비밀번호 재설정 결과.
      */
-    @PostMapping("/update")
+    @PostMapping(path = "/update", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> updatePassword(@RequestBody PasswordUpdateRequestDTO dto) {
         // 제공된 토큰이 없거나, 새 비밀번호가 없으면 400
         if (dto.token() == null) {

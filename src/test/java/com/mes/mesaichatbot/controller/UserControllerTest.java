@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -62,14 +63,14 @@ class UserControllerTest {
     @Test
     @DisplayName("권한 변경 시 결과 혹은 오류를 반환하는가?")
     void updatesRolesWithSuccessAndErrorStatuses() throws Exception {
-        mvc.perform(patch("/api/v1/users/3").with(csrf()).contentType("text/plain").content("ADMIN")).andExpect(status().isOk()).andExpect(content().string("권한이 수정되었습니다."));
+        mvc.perform(patch("/api/v1/users/3").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("ADMIN")).andExpect(status().isOk()).andExpect(content().string("권한이 수정되었습니다."));
         doThrow(new AccessDeniedException("forbidden")).when(service).updateRole(3L, "ADMIN");
-        mvc.perform(patch("/api/v1/users/3").with(csrf()).contentType("text/plain").content("ADMIN")).andExpect(status().isForbidden()).andExpect(content().string("forbidden"));
+        mvc.perform(patch("/api/v1/users/3").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("ADMIN")).andExpect(status().isForbidden()).andExpect(content().string("forbidden"));
         doThrow(new UsernameNotFoundException("missing")).when(service).updateRole(4L, "ADMIN");
-        mvc.perform(patch("/api/v1/users/4").with(csrf()).contentType("text/plain").content("ADMIN")).andExpect(status().isNotFound()).andExpect(content().string(""));
+        mvc.perform(patch("/api/v1/users/4").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("ADMIN")).andExpect(status().isNotFound()).andExpect(content().string(""));
         doThrow(new IllegalArgumentException("invalid")).when(service).updateRole(5L, "BAD");
-        mvc.perform(patch("/api/v1/users/5").with(csrf()).contentType("text/plain").content("BAD")).andExpect(status().isBadRequest()).andExpect(content().string("invalid"));
+        mvc.perform(patch("/api/v1/users/5").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("BAD")).andExpect(status().isBadRequest()).andExpect(content().string("invalid"));
         doThrow(new NullPointerException()).when(service).updateRole(6L, "ADMIN");
-        mvc.perform(patch("/api/v1/users/6").with(csrf()).contentType("text/plain").content("ADMIN")).andExpect(status().isUnauthorized()).andExpect(content().string("세션이 유효하지 않습니다."));
+        mvc.perform(patch("/api/v1/users/6").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("ADMIN")).andExpect(status().isUnauthorized()).andExpect(content().string("세션이 유효하지 않습니다."));
     }
 }

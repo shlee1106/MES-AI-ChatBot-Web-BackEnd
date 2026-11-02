@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DisplayName("JoinController")
 @WebMvcTest(JoinController.class)
 @WithMockUser(username = "admin", roles = "MASTER")
 @Import(MockMvcTestConfig.class)
@@ -38,15 +38,15 @@ class JoinControllerTest {
     @DisplayName("사용자 생성 시 성공 혹은 오류를 반환하는가?")
     void createsUserAndMapsInvalidRequest() throws Exception {
         var dto = new JoinRequestDTO(1L, 2L, "Password1!", "홍길동", "user@example.com", UserRole.ROLE_USER);
-        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType("application/json").content(mapper.writeValueAsString(dto))).andExpect(status().isCreated()).andExpect(content().string("계정이 성공적으로 생성 완료."));
+        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(dto))).andExpect(status().isCreated()).andExpect(content().string("계정이 성공적으로 생성 완료."));
         doThrow(new IllegalArgumentException("duplicate")).when(service).createUser(any());
-        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType("application/json").content(mapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(content().string("duplicate"));
+        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(dto))).andExpect(status().isBadRequest()).andExpect(content().string("duplicate"));
     }
 
     @Test
     @DisplayName("필수 입력값이 누락되면 오류를 반환하는가?")
     void validatesRequiredFields() throws Exception {
-        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType("application/json").content("{}")).andExpect(status().isBadRequest())
+        mvc.perform(post("/api/v1/admin/users").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isBadRequest())
                 .andExpect(content().string(
                         allOf(
                                 containsString("비밀번호는 필수 입력값입니다."),

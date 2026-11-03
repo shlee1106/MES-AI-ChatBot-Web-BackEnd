@@ -2,6 +2,7 @@ package com.mes.mesaichatbot.domain.user.service;
 
 import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
+import com.mes.mesaichatbot.domain.UserMemberId;
 import com.mes.mesaichatbot.domain.user.dto.JoinRequestDTO;
 import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
 import com.mes.mesaichatbot.domain.user.entity.UserRole;
@@ -71,10 +72,13 @@ public class UserService implements UserDetailsService {
             throw new DuplicateKeyException("이미 등록된 사원입니다.");
         }
 
-        // 엔티티 저장
+        // 복합키(회사번호 + 사원번호) 객체 생성
+        UserMemberId userMemberId = new UserMemberId(dto.companyId(), dto.employeeId());
+
+        // 엔티티 저장 (UserMember 필드 순서: id, company, username, password, companyEmail, roleCode, createdAt)
         UserMember entity = new UserMember(
-                dto.employeeId(), company, dto.username(),
-                dto.email(), passwordEncoder.encode(dto.password()),
+                userMemberId, company, dto.username(),
+                passwordEncoder.encode(dto.password()), dto.email(),
                 dto.role(), LocalDateTime.now());
 
         userRepository.save(entity);

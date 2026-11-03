@@ -19,23 +19,39 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserMember implements UserDetails {
-    @Id
-    @Column(name = "employee_id")
-    private Long employeeId;
+
+    @EmbeddedId
+    private UserMemberId id;
+
+    @MapsId("companyId")
     @ManyToOne
     @JoinColumn(name = "company_id", nullable = false)
-    private Company companyId;
+    private Company company;
+
     @Column(name = "user_name", nullable = false, length = 50)
     private String username;
+
     @Column(name = "password", nullable = false)
     private String password;
+
     @Column(name = "company_email", nullable = false, unique = true)
     private String companyEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role_code", nullable = false, length = 50)
     private UserRole roleCode;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    // 객체(복합키)에 들어간 컬럼 오류방지용 설정자
+    public Long getEmployeeId() {
+        return this.id != null ? this.id.getEmployeeId() : null;
+    }
+
+    public Company getCompanyId() {
+        return this.company;
+    }
 
     @Override
     public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {

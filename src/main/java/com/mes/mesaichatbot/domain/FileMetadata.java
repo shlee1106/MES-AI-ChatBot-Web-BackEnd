@@ -32,6 +32,9 @@ public class FileMetadata {
     @Column(name = "file_type", nullable = false, length = 20)
     private String fileType;
 
+    @Column(name = "shared", nullable = false)
+    private boolean shared;
+
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 }

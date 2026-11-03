@@ -44,6 +44,20 @@ public class UserMember implements UserDetails {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    /**
+     * 사원번호(Long)와 회사 엔티티로 바로 생성할 수 있는 호환 생성자.
+     * 내부적으로 {@link UserMemberId} 복합키 객체를 생성하여 매핑합니다.
+     */
+    public UserMember(Long employeeId, Company company, String username, String password, String companyEmail, UserRole roleCode, LocalDateTime createdAt) {
+        this.id = new UserMemberId(company != null ? company.getCompanyId() : null, employeeId);
+        this.company = company;
+        this.username = username;
+        this.password = password;
+        this.companyEmail = companyEmail;
+        this.roleCode = roleCode;
+        this.createdAt = createdAt;
+    }
+
     // 객체(복합키)에 들어간 컬럼 오류방지용 설정자
     public Long getEmployeeId() {
         return this.id != null ? this.id.getEmployeeId() : null;

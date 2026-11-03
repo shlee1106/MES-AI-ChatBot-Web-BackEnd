@@ -22,8 +22,12 @@ public class FileMetadata {
     @JoinColumn(name = "company_id", nullable = false)
     private Company companyId;
 
+    // UserMember가 복합키(company_id, employee_id)를 사용하므로 2개 컬럼을 모두 매핑
     @ManyToOne
-    @JoinColumn(name = "employee_id", nullable = false)
+    @JoinColumns({
+            @JoinColumn(name = "company_id", referencedColumnName = "company_id", insertable = false, updatable = false),
+            @JoinColumn(name = "employee_id", referencedColumnName = "employee_id", nullable = false)
+    })
     private UserMember employeeId;
 
     @Column(name = "origin_name", nullable = false)
@@ -37,4 +41,11 @@ public class FileMetadata {
 
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
+
+    /**
+     * 공유 여부(shared) 기본값을 false로 설정하는 생성자.
+     */
+    public FileMetadata(String fileId, Company companyId, UserMember employeeId, String originName, String fileType, LocalDateTime uploadedAt) {
+        this(fileId, companyId, employeeId, originName, fileType, false, uploadedAt);
+    }
 }

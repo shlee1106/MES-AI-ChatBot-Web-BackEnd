@@ -75,8 +75,8 @@ public class FileService {
         String originName = file.getOriginalFilename();
         String fileType = StringUtils.getFilenameExtension(originName);
 
-        // DB에 삽입할 새 행 생성.
-        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, requestedAt);
+        // DB에 삽입할 새 행 생성 (shared 기본값 false 적용)
+        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, false, requestedAt);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(), requestedAt);

@@ -63,7 +63,7 @@ public class FileService {
      * @throws UsernameNotFoundException 사용자 정보를 찾을 수 없을 경우.
      */
     @Transactional
-    public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt)
+    public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, Boolean shared)
             throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
@@ -76,7 +76,7 @@ public class FileService {
         String fileType = StringUtils.getFilenameExtension(originName);
 
         // DB에 삽입할 새 행 생성 (shared 기본값 false 적용)
-        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, false, requestedAt);
+        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, shared, requestedAt);
 
         // 데이터 파싱 시도.
         List<UploadDataDetailsDto> parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(), requestedAt);

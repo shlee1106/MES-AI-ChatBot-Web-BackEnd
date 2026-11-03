@@ -49,7 +49,7 @@ public class FileController {
     }
 
     /**
-     * 파일 업로드를 처리합니다.
+     * 개인 파일 업로드를 처리합니다.
      *
      * @param file 업로드된 {@link MultipartFile} 파일.
      * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
@@ -61,7 +61,31 @@ public class FileController {
         try {
             // 성공 시 200 반환.
             // MongoDB 저장 여부와는 상관 없음.
-            FileUploadResponseDto dto = fileService.uploadFile(file, now);
+            FileUploadResponseDto dto = fileService.uploadFile(file, now, false);
+            return ResponseEntity.ok(dto);
+        } catch (IOException | NotOfficeXmlFileException | NullPointerException e) {
+            // 파일이 올바르지 않으면 400 반환
+            return ResponseEntity.badRequest().body(new FileUploadResponseDto("파일이 올바르지 않습니다.", null, null));
+        } catch (UsernameNotFoundException e) {
+            // 세션이 유효하지 않으면 401 반환
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new FileUploadResponseDto("인증 정보가 올바르지 않습니다.", null, null));
+        }
+    }
+
+    /**
+     * 공용 파일 업로드를 처리합니다.
+     *
+     * @param file 업로드된 {@link MultipartFile} 파일.
+     * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
+     */
+    @PostMapping(value = "/admin/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<FileUploadResponseDto> uploadsharedfile(@RequestPart("file") MultipartFile file) {
+        // 요청 시각 기록.
+        LocalDateTime now = LocalDateTime.now();
+        try {
+            // 성공 시 200 반환.
+            // MongoDB 저장 여부와는 상관 없음.
+            FileUploadResponseDto dto = fileService.uploadFile(file, now, true);
             return ResponseEntity.ok(dto);
         } catch (IOException | NotOfficeXmlFileException | NullPointerException e) {
             // 파일이 올바르지 않으면 400 반환

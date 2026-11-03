@@ -45,6 +45,9 @@ public class UserController {
     public ResponseEntity<List<UserInfoResponseDTO>> getUserForAdmin() {
         try {
             return ResponseEntity.ok(userService.getUserForAdmin());
+        } catch (AccessDeniedException e) {
+            // 조회 권한이 없는 일반 사원(ROLE_USER)인 경우 403 Forbidden 응답 반환.
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (NullPointerException e) {
             // 세션이 유효하지 않은 경우 401 응답 반환.
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

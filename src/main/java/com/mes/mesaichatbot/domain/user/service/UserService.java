@@ -9,6 +9,7 @@ import com.mes.mesaichatbot.repository.CompanyRepository;
 import com.mes.mesaichatbot.repository.UserMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +37,11 @@ public class UserService implements UserDetailsService {
     private final CompanyRepository companyRepository;
 
     /**
-     * 권한별로 만들 수 있는 유저 생성 메소드
+     * 권한별로 만들 수 있는 유저 생성 메소드.
+     *
+     * @param dto 생성할 사원 정보 DTO
+     * @throws AccessDeniedException 권한이 없거나 타 회사 소속 직원을 등록하려 할 경우 발생 (403)
+     * @throws DuplicateKeyException 이미 등록된 사원번호일 경우 발생 (409)
      */
     @Transactional
     public void createUser(JoinRequestDTO dto) {
@@ -46,24 +51,24 @@ public class UserService implements UserDetailsService {
         Long creatorCompanyId = Long.parseLong(auth.getName().split("_")[0]);
         Company company = companyRepository.findByCompanyId(dto.companyId());
 
-        // 일반 사원은 계정생성 불가
+        // 일반 사원은 계정생성 불가 (권한 부족이므로 403 AccessDeniedException 발생)
         if (Objects.requireNonNull(creatorRole).equals("ROLE_USER")) {
-            throw new IllegalArgumentException("일반 사원은 계정을 생성할 권한이 없습니다.");
+            throw new AccessDeniedException("일반 사원은 계정을 생성할 권한이 없습니다.");
         }
 
-        // 중간관리자는 최고관리자, 자신과 같은 중간관리자 생성 불가
+        // 중간관리자는 최고관리자, 자신과 같은 중간관리자 생성 불가 및 타 회사 사원 등록 불가 (403)
         if (creatorRole.equals("ROLE_MANAGER")) {
             if (dto.role() == UserRole.ROLE_MASTER || dto.role() == UserRole.ROLE_MANAGER) {
-                throw new IllegalArgumentException("중간관리자는 하위관리자 계정만 생성할 수 있습니다.");
+                throw new AccessDeniedException("중간관리자는 하위관리자 계정만 생성할 수 있습니다.");
             }
             if (!creatorCompanyId.equals(dto.companyId())) {
                 throw new AccessDeniedException("중간 관리자는 본인 소속 회사 직원만 등록이 가능합니다.");
             }
         }
 
-        // 계정 생성 중복 검증
+        // 계정 생성 중복 검증 (중복 데이터 충돌이므로 409 DuplicateKeyException 발생)
         if (userRepository.existsByCompanyIdAndEmployeeId(company, dto.employeeId())) {
-            throw new IllegalArgumentException("이미 등록된 사원입니다.");
+            throw new DuplicateKeyException("이미 등록된 사원입니다.");
         }
 
         // 엔티티 저장
@@ -154,26 +159,32 @@ public class UserService implements UserDetailsService {
     }
 
     /**
-     * 모든 사용자를 반환합니다.
+     * 관리자용 사용자 목록을 반환합니다.
      *
      * @return 모든 사용자의 목록이 담긴 {@link List}.
-     * @throws NullPointerException 세션이 유효하지 않은 경우 발생합니다.
+     * @throws NullPointerException  세션이 유효하지 않은 경우 발생합니다.
+     * @throws AccessDeniedException 일반 사원(ROLE_USER)이 관리자용 목록 조회를 시도할 경우 발생합니다.
      */
     @Transactional(readOnly = true)
-    public List<UserInfoResponseDTO> getUserForAdmin() throws NullPointerException {
+    public List<UserInfoResponseDTO> getUserForAdmin() throws NullPointerException, AccessDeniedException {
         // 인증 정보 취득
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentUserRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
         Long currentCompanyId = Long.parseLong(auth.getName().split("_")[0]);
 
+        // 일반 사원(ROLE_USER)은 전체 회원 목록 조회 권한이 없으므로 403 예외 발생
+        if ("ROLE_USER".equals(currentUserRole)) {
+            throw new AccessDeniedException("일반 사원은 사용자 목록을 조회할 권한이 없습니다.");
+        }
+
         // 반환 대상 사용자를 담은 리스트 생성
         List<UserMember> users;
 
         if ("ROLE_MASTER".equals(currentUserRole)) {
-            // 관리자의 경우 모든 사용자 삽입
+            // 최고 관리자의 경우 모든 사용자 삽입
             users = userRepository.findAll();
         } else {
-            // 일반 사용자의 경우 본사에 속한 사용자 삽입
+            // 중간 관리자의 경우 본인 회사에 속한 사용자만 삽입
             Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
             users = userRepository.findByCompanyId(myCompany);
         }

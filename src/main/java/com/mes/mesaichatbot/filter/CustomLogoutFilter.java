@@ -55,6 +55,13 @@ public class CustomLogoutFilter extends GenericFilterBean {
         //  [refreshToken 찾기] JSON 바디에 refreshToken 키와 대칭 중인 value값 찾기
         String refresh = null;
 
+
+        /** 해당 밑 모든 try-catch문에 조건에 맞지 않아 catch(예외처리)로 이동 시
+         * Redis에 저장되어 있는 사용자 RefreshToken이 아니므로 접근자체 할 필요 없이
+         * 에러코드 응답 후 바로 세션 종료
+         * 예외 처리하는 이유 : 누군가 아무 문자열을 넣고 수만 번 해당 api 호출하였을 시
+         * Redis 서버까지 네트워크 통신이 발생하여 DB에 부하가 발생
+         * 고로 RefreshToken이 일치하지 않을 경우 백엔드 서버 CPU 연산만으로 걸러내는 작업 실시*/
         try {
             Map<String, String> bodyMap = objectMapper.readValue(request.getInputStream(), new TypeReference<>() {
             });

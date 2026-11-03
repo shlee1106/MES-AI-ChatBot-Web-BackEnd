@@ -32,7 +32,7 @@ public class JWTFilter extends OncePerRequestFilter {
         // 실제 로그인, 로그아웃, 재발급 API 경로에 맞게 수정
         return path.equals("/api/v1/login")
                 || path.equals("/api/v1/jwt/refresh")
-                || path.equals("/api/v1/join")
+                || path.startsWith("/api/v1/password/")
                 || path.equals("/api/v1/logout");
     }
 

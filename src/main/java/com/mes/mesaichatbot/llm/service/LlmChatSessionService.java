@@ -61,12 +61,34 @@ public class LlmChatSessionService {
         return chatSessionRepository.findAllByEmployeeId(member);
     }
 
+    /**
+     * 특정 대화방의 대화 내역을 조회합니다.
+     *
+     * @param sessionId 조회할 대화 세션 ID
+     * @param member    현재 로그인한 사용자 엔티티
+     * @return 시간순으로 정렬된 {@link ChatHistory} 리스트
+     * @throws IllegalArgumentException 존재하지 않는 세션 ID일 경우 발생 (404)
+     * @throws AccessDeniedException    본인 소유의 대화방이 아닐 경우 발생 (403)
+     */
     @Transactional(readOnly = true)
-    public List<ChatHistory> getChatHistories(String sessionId, UserMember member) throws AccessDeniedException {
-        // UUID를 통해 Map에서 대화 내역 가져오기
-        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(chatSessionRepository.findBySessionId(sessionId));
+    public List<ChatHistory> getChatHistories(String sessionId, UserMember member)
+            throws IllegalArgumentException, AccessDeniedException {
+        // 세션 존재 여부 먼저 확인 (존재하지 않으면 404 처리를 위해 예외 발생)
+        ChatSession session = chatSessionRepository.findBySessionId(sessionId);
+        if (session == null) {
+            throw new IllegalArgumentException("세션을 찾을 수 없습니다.");
+        }
 
-        // 대화 내역 중 타인의 내역이 포함된 경우 403 반환
+        // 대화 내역이 0건인 빈 방이라도 타인의 방이면 조회할 수 없도록 세션 소유자(회사번호·사원번호) 검증
+        if (!Objects.equals(session.getEmployeeId().getEmployeeId(), member.getEmployeeId())
+                || !Objects.equals(session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId())) {
+            throw new AccessDeniedException("본인의 대화방만 조회할 수 있습니다.");
+        }
+
+        // 해당 세션의 대화 내역을 시간 오름차순으로 조회
+        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(session);
+
+        // 대화 내역 중 타인의 내역이 포함된 경우 이중 검증 (403 반환)
         if (histories.stream().anyMatch(chatHistory -> !Objects.equals(chatHistory.getEmployeeId().getEmployeeId(), member.getEmployeeId()))) {
             throw new AccessDeniedException("본인의 대화방만 조회할 수 있습니다.");
         }

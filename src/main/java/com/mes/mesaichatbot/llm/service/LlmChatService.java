@@ -16,6 +16,7 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -73,12 +75,33 @@ public class LlmChatService {
         this.chatHistoryRepository = chatHistoryRepository;
     }
 
+    /**
+     * 사용자의 질문을 받아 RAG 기반으로 LLM 답변을 생성하고 대화 내역을 저장합니다.
+     *
+     * @param sessionId    대화 세션 ID
+     * @param member       요청 사용자 엔티티
+     * @param requestedAt  요청 시각
+     * @param userQuestion 사용자의 질문 DTO
+     * @return 생성된 AI 답변 {@link ChatHistory}
+     * @throws IllegalArgumentException UUID 형식이 올바르지 않을 경우 발생 (400)
+     * @throws AccessDeniedException    본인 소유의 대화방이 아닐 경우 발생 (403)
+     * @throws ResponseStatusException  세션을 찾을 수 없거나(404) 질문이 비어 있을 경우(400) 발생
+     * @throws IllegalStateException    LLM 응답이 비어 있을 경우 발생 (502)
+     */
     @Transactional
-    public ChatHistory askToLlm(String sessionId, UserMember member, LocalDateTime requestedAt, UserQuestionDto userQuestion) throws IllegalArgumentException, ResponseStatusException, IllegalStateException {
+    public ChatHistory askToLlm(String sessionId, UserMember member, LocalDateTime requestedAt, UserQuestionDto userQuestion)
+            throws IllegalArgumentException, AccessDeniedException, ResponseStatusException, IllegalStateException {
         Company company = member.getCompanyId();
 
         // URL 파라미터의 UUID 파싱 시도
         UUID sessionUuid = UUID.fromString(sessionId);
+
+        // DB에서 대화 세션 조회 및 본인 소유 세션인지 권한 검증 (타인 세션이면 403 반환)
+        ChatSession session = chatSessionRepository.findBySessionId(sessionId);
+        if (session != null && (!Objects.equals(session.getEmployeeId().getEmployeeId(), member.getEmployeeId())
+                || !Objects.equals(session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId()))) {
+            throw new AccessDeniedException("본인의 대화방에만 질문할 수 있습니다.");
+        }
 
         // UUID로 메시지 목록 불러오기
         List<Message> messages = chatHistoryService.getChatHistories().get(sessionUuid);
@@ -101,19 +124,6 @@ public class LlmChatService {
         // LLM 요청 객체 정의 및 요청
         ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages).user(formattedQuestion).call();
 
-        // 파일 업로드가 있을 경우의 코드. API 규격을 지키기 위해 제거.
-//        if (file == null || file.getContentType() == null || file.isEmpty()) {
-//            response = chatClient.prompt().advisors(ragAdvisor).user(formattedQuestion).call();
-//        } else {
-//            try {
-//                MimeType fileType = MimeTypeUtils.parseMimeType(file.getContentType());
-//                Resource fileData = new ByteArrayResource(file.getBytes());
-//                response = chatClient.prompt().advisors(ragAdvisor).user(u -> u.media(fileType, fileData).text(formattedQuestion)).call();
-//            } catch (IOException | InvalidMimeTypeException e) {
-//                return ResponseEntity.badRequest().build();
-//            }
-//        }
-
         // LLM의 답변 임시 저장
         String llmAnswer = response.content();
         // 답변 시각 기록
@@ -133,7 +143,6 @@ public class LlmChatService {
         messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt)).content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
 
         // Ai 답변 결과를 조립 (null = 기본값 사용)
-        ChatSession session = chatSessionRepository.findBySessionId(sessionId);
         ChatHistory chatResult = new ChatHistory(null, company, member, session, llmAnswer, respondedAt, "assistant");
 
         // 유저 질문 결과 조립

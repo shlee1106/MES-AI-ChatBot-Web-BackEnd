@@ -124,16 +124,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/",
                                  "/actuator/health", "/api/v1/password/**", "/robots.txt").permitAll()
 
-                // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
+                // 2. 관리자용 API (중간관리자 이상만 접근 가능)
                 // 서열에 의해 MASTER도 자동 통과
-                .requestMatchers("/api/v1/admin/users")
-                .hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+                // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+                // 공용 파일 업로드 가능
+//                .requestMatchers("/api/v1/admin/**").hasRole("MANAGER")
+                .requestMatchers("/api/v1/users/me").authenticated()
+                .requestMatchers("/api/v1/users/**").hasRole("MANAGER")
 
                 // 3. 권한별 접근 경로
                 .requestMatchers("/actuator/**").hasRole("MASTER") // Actuator 상세 엔드포인트는 최고 관리자 전용
-                .requestMatchers("/api/v1/admin/**").hasRole("MASTER") // 최고 관리자 전용
-                .requestMatchers("/api/v1/manager/**").hasRole("MANAGER") // 중간 관리자 전용
-                .requestMatchers("/api/v1/user/**").hasRole("USER") // 일반 사원 전용
 
                 // 4. 위 적히지 않은 나머지 모든 요청은 무조건 로그인(인증)을 해야 통과
                 .anyRequest().authenticated());

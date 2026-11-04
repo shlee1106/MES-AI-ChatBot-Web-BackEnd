@@ -39,8 +39,8 @@ class CustomLogoutFilterTest {
         when(claims.get("tokenType", String.class)).thenReturn("REFRESH");
         when(jwtUtil.getClaims("refresh")).thenReturn(claims);
         when(repository.existsById("refresh")).thenReturn(true);
-        var request = logoutRequest("{\"refreshToken\":\"refresh\"}");
-        var response = new MockHttpServletResponse();
+        MockHttpServletRequest request = logoutRequest("{\"refreshToken\":\"refresh\"}");
+        MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilter(request, response, new MockFilterChain());
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getContentAsString()).isEmpty();
@@ -50,7 +50,7 @@ class CustomLogoutFilterTest {
     @Test
     @DisplayName("잘못된 로그아웃 요청을 처리하고, 다른 요청은 통과시키는가?")
     void rejectsMissingMalformedOrWrongTypeTokenAndPassesOtherRequests() throws Exception {
-        var response = new MockHttpServletResponse();
+        MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilter(logoutRequest("{}"), response, new MockFilterChain());
         assertThat(response.getStatus()).isEqualTo(400);
         assertThat(response.getContentAsString()).isEmpty();
@@ -61,7 +61,7 @@ class CustomLogoutFilterTest {
         filter.doFilter(logoutRequest("{\"refreshToken\":\"access\"}"), response, new MockFilterChain());
         assertThat(response.getStatus()).isEqualTo(400);
         assertThat(response.getContentAsString()).isEmpty();
-        var nextResponse = new MockHttpServletResponse();
+        MockHttpServletResponse nextResponse = new MockHttpServletResponse();
         filter.doFilter(new MockHttpServletRequest("GET", "/other"),
                         nextResponse, new MockFilterChain());
         assertThat(nextResponse.getStatus()).isEqualTo(200);
@@ -70,7 +70,7 @@ class CustomLogoutFilterTest {
     }
 
     private MockHttpServletRequest logoutRequest(String body) {
-        var request = new MockHttpServletRequest("POST", "/api/v1/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/logout");
         request.setContent(body.getBytes());
         return request;
     }

@@ -58,7 +58,7 @@ class ChatControllerTest {
                 .thenReturn(
                         new ChatHistory("chat-1", member, session,
                                         "mocked answer", now, "assistant"));
-        var body = mapper.writeValueAsString(new UserQuestionDto("질문"));
+        String body = mapper.writeValueAsString(new UserQuestionDto("질문"));
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
            .andExpect(status().isOk()).andExpect(jsonPath("$.message")

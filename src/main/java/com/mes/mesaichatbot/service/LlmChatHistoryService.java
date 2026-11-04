@@ -45,7 +45,7 @@ public class LlmChatHistoryService {
         Iterable<ChatHistory> rows = chatHistoryRepository.findAll();
         Iterable<ChatSession> sessionRows = chatSessionRepository.findAll();
 
-        for (var chatId : sessionRows) {
+        for (ChatSession chatId : sessionRows) {
             // 해당 대화방이 미존재한다면
             if (!chatHistories.containsKey(UUID.fromString(chatId.getSessionId()))) {
                 // 새로 리스트 만들어서 삽입

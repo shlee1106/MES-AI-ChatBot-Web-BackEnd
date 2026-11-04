@@ -50,18 +50,18 @@ class FileControllerTest {
     void uploadsAndMapsInvalidFileOrMissingUser() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "sample.csv", "text/csv", "a,b".getBytes());
-        when(fileService.uploadFile(any(), any(),false)).thenReturn(
+        when(fileService.uploadFile(any(), any(), any())).thenReturn(
                 new FileUploadResponseDto("uploaded", null, java.util.List.of()));
         mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
            .andExpect(status().isOk()).andExpect(jsonPath("$.message").value("uploaded"))
            .andExpect(jsonPath("$.parsedData").isArray())
            .andExpect(jsonPath("$.parsedData").isEmpty());
-        doThrow(new java.io.IOException("bad file")).when(fileService).uploadFile(any(), any(),false);
+        doThrow(new java.io.IOException("bad file")).when(fileService).uploadFile(any(), any(), any());
         mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
            .andExpect(status().isBadRequest())
            .andExpect(jsonPath("$.fileData").value((Object) null))
            .andExpect(jsonPath("$.parsedData").value((Object) null));
-        doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(),false);
+        doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(), any());
         mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
            .andExpect(status().isUnauthorized())
            .andExpect(jsonPath("$.fileData").value((Object) null))

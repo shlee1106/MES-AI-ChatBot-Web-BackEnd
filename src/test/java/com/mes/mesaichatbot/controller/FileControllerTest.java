@@ -17,6 +17,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -46,23 +48,43 @@ class FileControllerTest {
     }
 
     @Test
+    @DisplayName("공유 파일 업로드 시 성공적으로 처리되고 true가 서비스로 전달되는가?")
+    void uploadsSharedFileSuccessfully() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "sample.csv", "text/csv", "a,b".getBytes());
+        when(fileService.uploadFile(any(), any(), eq(true))).thenReturn(
+                new FileUploadResponseDto("uploaded", null, java.util.List.of()));
+
+        mvc.perform(multipart("/api/v1/files")
+                        .file(file)
+                        .param("shared", "true")
+                        .with(csrf()))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.message").value("uploaded"))
+           .andExpect(jsonPath("$.parsedData").isArray())
+           .andExpect(jsonPath("$.parsedData").isEmpty());
+
+        verify(fileService).uploadFile(any(), any(), eq(true));
+    }
+
+    @Test
     @DisplayName("파일 업로드 시 성공 혹은 오류를 반환하는가?")
     void uploadsAndMapsInvalidFileOrMissingUser() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "sample.csv", "text/csv", "a,b".getBytes());
         when(fileService.uploadFile(any(), any(), any())).thenReturn(
                 new FileUploadResponseDto("uploaded", null, java.util.List.of()));
-        mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
+        mvc.perform(multipart("/api/v1/files").file(file).param("shared", "false").with(csrf()))
            .andExpect(status().isOk()).andExpect(jsonPath("$.message").value("uploaded"))
            .andExpect(jsonPath("$.parsedData").isArray())
            .andExpect(jsonPath("$.parsedData").isEmpty());
         doThrow(new java.io.IOException("bad file")).when(fileService).uploadFile(any(), any(), any());
-        mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
+        mvc.perform(multipart("/api/v1/files").file(file).param("shared", "false").with(csrf()))
            .andExpect(status().isBadRequest())
            .andExpect(jsonPath("$.fileData").value((Object) null))
            .andExpect(jsonPath("$.parsedData").value((Object) null));
         doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(), any());
-        mvc.perform(multipart("/api/v1/files/upload").file(file).with(csrf()))
+        mvc.perform(multipart("/api/v1/files").file(file).param("shared", "false").with(csrf()))
            .andExpect(status().isUnauthorized())
            .andExpect(jsonPath("$.fileData").value((Object) null))
            .andExpect(jsonPath("$.parsedData").value((Object) null));
@@ -71,21 +93,21 @@ class FileControllerTest {
     @Test
     @DisplayName("파일 삭제 시 결과 혹은 오류를 반환하는가?")
     void deletesAndMapsNotFoundUnauthorizedAndForbidden() throws Exception {
-        mvc.perform(delete("/api/v1/files/delete/id").with(csrf()))
+        mvc.perform(delete("/api/v1/files/id").with(csrf()))
            .andExpect(status().isOk())
            .andExpect(jsonPath("$.fileId").value("id"))
            .andExpect(jsonPath("$.message").isNotEmpty());
         doThrow(new IllegalArgumentException("missing")).when(fileService).delete("missing");
-        mvc.perform(delete("/api/v1/files/delete/missing").with(csrf()))
+        mvc.perform(delete("/api/v1/files/missing").with(csrf()))
            .andExpect(status().isNotFound())
            .andExpect(jsonPath("$.message").value("missing"));
         doThrow(new AuthenticationCredentialsNotFoundException("no auth")).when(fileService).delete("unauth");
-        mvc.perform(delete("/api/v1/files/delete/unauth").with(csrf()))
+        mvc.perform(delete("/api/v1/files/unauth").with(csrf()))
            .andExpect(status().isUnauthorized())
            .andExpect(jsonPath("$.fileId").value((Object) null))
            .andExpect(jsonPath("$.message").isNotEmpty());
         doThrow(new AccessDeniedException("forbidden")).when(fileService).delete("forbidden");
-        mvc.perform(delete("/api/v1/files/delete/forbidden").with(csrf()))
+        mvc.perform(delete("/api/v1/files/forbidden").with(csrf()))
            .andExpect(status().isForbidden())
            .andExpect(jsonPath("$.fileId").value((Object) null))
            .andExpect(jsonPath("$.message").value("forbidden"));

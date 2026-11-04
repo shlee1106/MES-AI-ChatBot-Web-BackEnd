@@ -1,6 +1,5 @@
 package com.mes.mesaichatbot.llm.controller;
 
-import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.domain.user.service.UserService;
@@ -66,6 +65,7 @@ public class ChatController {
             // 세션 미존재(404) 또는 빈 질문(400) 상태 코드 반환
             return ResponseEntity.status(e.getStatusCode()).build();
         } catch (IllegalStateException e) {
+            log.error("LLM 응답이 비어 있거나 실패했습니다: {}", e.getMessage(), e);
             // 외부 LLM 응답이 비어 있거나 실패한 경우 502 Bad Gateway 반환
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
         }
@@ -78,7 +78,8 @@ public class ChatController {
      * @return {@link ChatSessionResponseDto} 응답 엔티티.
      */
     @PostMapping("/sessionrooms")
-    public ResponseEntity<ChatSessionResponseDto> createChatSession(@RequestBody ChatSessionRequestDto chatSessionRequest) {
+    public ResponseEntity<ChatSessionResponseDto> createChatSession(
+            @RequestBody ChatSessionRequestDto chatSessionRequest) {
         LocalDateTime requestedAt = LocalDateTime.now();
         try {
             // 사용자의 정보를 UserService에서 가져옴
@@ -102,7 +103,8 @@ public class ChatController {
      * @return List 형태의 대화 내역.
      */
     @GetMapping("/sessions/{sessionId}/histories")
-    public ResponseEntity<List<ChatHistoryResponseDto>> getChatHistories(@PathVariable(name = "sessionId") String sessionId) {
+    public ResponseEntity<List<ChatHistoryResponseDto>> getChatHistories(
+            @PathVariable(name = "sessionId") String sessionId) {
         try {
             UserMember member = userService.getCurrentUserEntity();
             var histories = llmChatSessionService.getChatHistories(sessionId, member);
@@ -155,7 +157,8 @@ public class ChatController {
     public ResponseEntity<List<ChatSessionResponseDto>> getChatSessions() {
         try {
             // 대화 세션 불러오기
-            return ResponseEntity.ok(ChatSessionResponseDto.from(llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
+            return ResponseEntity.ok(ChatSessionResponseDto.from(
+                    llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
         } catch (NullPointerException | UsernameNotFoundException e) {
             // 인증되지 않은 사용자인 경우 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

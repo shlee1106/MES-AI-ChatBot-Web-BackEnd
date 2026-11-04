@@ -64,7 +64,7 @@ public class FileService {
      */
     @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, Boolean shared)
-            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException {
+            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
         // 사용자의 정보를 UserService에서 가져옴
@@ -76,10 +76,12 @@ public class FileService {
         String fileType = StringUtils.getFilenameExtension(originName);
 
         // DB에 삽입할 새 행 생성 (shared 기본값 false 적용)
-        FileMetadata originalFile = new FileMetadata(fileId.toString(), company, member, file.getOriginalFilename(), fileType, shared, requestedAt);
+        FileMetadata originalFile = new FileMetadata(fileId.toString(), member, file.getOriginalFilename(), fileType,
+                                                     shared, requestedAt);
 
         // 데이터 파싱 시도.
-        List<UploadDataDetailsDto> parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(), requestedAt);
+        List<UploadDataDetailsDto> parsedData = documentService.parse(file, company.getCompanyId(), fileId.toString(),
+                                                                      requestedAt);
 
         // 업로드 파일의 메타데이터를 MySQL로 전송하는 코드
         fileMetadataRepository.save(originalFile);
@@ -106,7 +108,8 @@ public class FileService {
             AccessDeniedException {
         // FileID로 파일 메타데이터 조회
         FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 파일 ID입니다."));
+                                                          .orElseThrow(() -> new IllegalArgumentException(
+                                                                  "존재하지 않는 파일 ID입니다."));
 
         // 파일 업로더의 회원번호 및 권한 조회
         UserMember uploader = fileMetadata.getEmployeeId();
@@ -133,7 +136,8 @@ public class FileService {
 
         // 추출한 사원번호로 유저 조회
         UserMember requester = userMemberRepository.findById(requesterEmployeeId)
-                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("삭제 요청자 정보를 찾을 수 없습니다."));
+                                                   .orElseThrow(() -> new AuthenticationCredentialsNotFoundException(
+                                                           "삭제 요청자 정보를 찾을 수 없습니다."));
         UserRole requesterRole = requester.getRoleCode();
 
         // USER는 본인이 등록한 파일만 삭제 가능
@@ -154,7 +158,11 @@ public class FileService {
         fileMetadataRepository.delete(fileMetadata);
 
         // 몽고DB에 등록된 파싱데이터 삭제
-        documentService.deleteFromVectorStore(fileId);
+        try {
+            documentService.deleteFromVectorStore(fileId);
+        } catch (UnsupportedOperationException e) {
+            log.warn("LLM 서비스를 이용할 수 없습니다: {}", e.getMessage(), e);
+        }
         log.info("MySQL 파일 메타데이터 삭제 완료: fileId = {}, 요청자 = {}", fileId, requesterEmployeeId);
     }
 }

@@ -2,7 +2,6 @@ package com.mes.mesaichatbot.llm.service;
 
 import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
-import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.llm.dto.ChatSessionRequestDto;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
@@ -34,23 +33,24 @@ public class LlmChatSessionService {
     private final ChatSessionRepository chatSessionRepository;
     private final LlmChatHistoryService llmChatHistoryService;
     private final ChatHistoryRepository chatHistoryRepository;
-    private final LlmChatHistoryService chatHistoryService;
     private final SecureRandom rng = new SecureRandom();
 
     @Transactional
-    public ChatSession createChatSession(UserMember member, ChatSessionRequestDto chatSessionRequest, LocalDateTime requestedAt)
+    public ChatSession createChatSession(UserMember member, ChatSessionRequestDto chatSessionRequest,
+                                         LocalDateTime requestedAt)
             throws IllegalArgumentException {
         // 대화방의 ID 생성
         UUID sessionUuid = UUID.randomUUID();
-        Company company = member.getCompanyId();
 
         // Title이 있으면 그대로 사용, 아니면 무작위 단어 3개 배합
-        String title = chatSessionRequest.title() != null ? chatSessionRequest.title() : "%s-%s-%s".formatted(WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)]);
+        String title = chatSessionRequest.title() != null ? chatSessionRequest.title() : "%s-%s-%s".formatted(
+                WORDS[rng.nextInt(0, WORDS.length)], WORDS[rng.nextInt(0, WORDS.length)],
+                WORDS[rng.nextInt(0, WORDS.length)]);
 
         // 대화 내역 Map에 새로 등록
-        chatHistoryService.getChatHistories().put(sessionUuid, new ArrayList<>());
+        llmChatHistoryService.getChatHistories().put(sessionUuid, new ArrayList<>());
 
-        ChatSession chatSession = new ChatSession(sessionUuid.toString(), company, member, title, requestedAt);
+        ChatSession chatSession = new ChatSession(sessionUuid.toString(), member, title, requestedAt);
 
         chatSessionRepository.save(chatSession);
         return chatSession;
@@ -89,7 +89,8 @@ public class LlmChatSessionService {
         List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(session);
 
         // 대화 내역 중 타인의 내역이 포함된 경우 이중 검증 (403 반환)
-        if (histories.stream().anyMatch(chatHistory -> !Objects.equals(chatHistory.getEmployeeId().getEmployeeId(), member.getEmployeeId()))) {
+        if (histories.stream().anyMatch(
+                chatHistory -> !Objects.equals(chatHistory.getEmployeeId().getEmployeeId(), member.getEmployeeId()))) {
             throw new AccessDeniedException("본인의 대화방만 조회할 수 있습니다.");
         }
 
@@ -97,11 +98,16 @@ public class LlmChatSessionService {
     }
 
     @Transactional
-    public void deleteChatSessions(String sessionId, UserMember member) throws IllegalArgumentException, AccessDeniedException {
-        ChatSession session = chatSessionRepository.findById(sessionId).orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
+    public void deleteChatSessions(String sessionId,
+                                   UserMember member) throws IllegalArgumentException, AccessDeniedException {
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                                                   .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
 
         // 본인 소유의 대화방인지 검증 (회사번호 + 사원번호 일치 확인)
-        if (!session.getEmployeeId().getEmployeeId().equals(member.getEmployeeId()) || !session.getCompanyId().getCompanyId().equals(member.getCompanyId().getCompanyId())) {
+        if (!session.getEmployeeId().getEmployeeId().equals(member.getEmployeeId()) || !session.getCompanyId()
+                                                                                               .getCompanyId()
+                                                                                               .equals(member.getCompanyId()
+                                                                                                             .getCompanyId())) {
             throw new AccessDeniedException("본인의 대화방만 삭제할 수 있습니다.");
         }
 

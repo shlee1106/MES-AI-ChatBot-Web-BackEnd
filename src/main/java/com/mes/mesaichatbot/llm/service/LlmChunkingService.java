@@ -3,14 +3,17 @@ package com.mes.mesaichatbot.llm.service;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import com.mes.mesaichatbot.llm.converter.UploadDataChunkConverter;
 import com.mes.mesaichatbot.llm.dto.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class LlmChunkingService {
     //region LLM 프롬프트
     private static final String SYSTEM_PROMPT = """
@@ -254,14 +257,22 @@ public class LlmChunkingService {
     //endregion
 
     // 의존성 자동 주입.
-    private final ChatClient client;
+    private final ObjectProvider<ChatClient.Builder> chatClientProvider;
     private final UploadDataChunkConverter converter;
     private final ObjectMapper objectMapper;
 
-    public LlmChunkingService(ChatClient.Builder clientBuilder, UploadDataChunkConverter converter, ObjectMapper objectMapper) {
-        this.client = clientBuilder.build();
-        this.converter = converter;
-        this.objectMapper = objectMapper;
+    /**
+     * ChatClient를 얻습니다.
+     *
+     * @return {@link ChatClient}
+     * @throws UnsupportedOperationException ChatClient를 사용할 수 없을 때 발생
+     */
+    private ChatClient getChatClient() throws UnsupportedOperationException {
+        ChatClient.Builder builder = chatClientProvider.getIfAvailable();
+        if (builder == null) {
+            throw new UnsupportedOperationException("ChatClient를 사용할 수 없습니다.");
+        }
+        return builder.defaultSystem(SYSTEM_PROMPT).build();
     }
 
     /**
@@ -269,25 +280,34 @@ public class LlmChunkingService {
      *
      * @param rows 파싱된 문서.
      * @return RAG에 사용할 수 있는 {@link Document}.
+     * @throws UnsupportedOperationException ChatClient를 사용할 수 없을 때 발생
      */
     public List<Document> chunk(
             List<UploadDataDetailsDto> rows
-    ) throws IllegalArgumentException {
+    ) throws IllegalArgumentException, UnsupportedOperationException {
+        ChatClient chatClient = getChatClient();
+
         // 전송할 데이터 조립.
-        ChunkRequest data = new ChunkRequest(new DocumentData(rows.getFirst().fileId()), new ChunkingPolicy(), SimplifiedData.from(rows));
+        ChunkRequest data = new ChunkRequest(new DocumentData(rows.getFirst().fileId()), new ChunkingPolicy(),
+                                             SimplifiedData.from(rows));
 
         // LLM에 요청 전송.
-        ChatClient.CallResponseSpec response = client.prompt().system(SYSTEM_PROMPT).user("""
-                <!-- START OF USER PROMPT -->
-                다음 문서를 의미적으로 Chunking하세요.
-                [Chunking Policy]
-                targetTokens: %d
-                maxTokens: %d
-                minTokens: %d
-                
-                [Rows]
-                %s
-                <!-- END OF USER PROMPT -->""".formatted(data.chunkingPolicy().targetTokens(), data.chunkingPolicy().maxTokens(), data.chunkingPolicy().minTokens(), objectMapper.writeValueAsString(data.rows()))).call();
+        ChatClient.CallResponseSpec response = chatClient.prompt()
+                                                         .user("""
+                                                                       <!-- START OF USER PROMPT -->
+                                                                       다음 문서를 의미적으로 Chunking하세요.
+                                                                       [Chunking Policy]
+                                                                       targetTokens: %d
+                                                                       maxTokens: %d
+                                                                       minTokens: %d
+                                                                       
+                                                                       [Rows]
+                                                                       %s
+                                                                       <!-- END OF USER PROMPT -->""".formatted(
+                                                                 data.chunkingPolicy().targetTokens(),
+                                                                 data.chunkingPolicy().maxTokens(),
+                                                                 data.chunkingPolicy().minTokens(),
+                                                                 objectMapper.writeValueAsString(data.rows()))).call();
         // 답변 임시 저장.
         String responseContent = response.content();
         // LLM이 답변을 반환하지 않았을 경우의 예외
@@ -296,7 +316,8 @@ public class LlmChunkingService {
         }
 
         // 답변을 파싱하여 반환.
-        return converter.convert(rows, objectMapper.readValue(removeMarkdownFence(responseContent), ChunkingResponse.class));
+        return converter.convert(rows,
+                                 objectMapper.readValue(removeMarkdownFence(responseContent), ChunkingResponse.class));
     }
 
     /**

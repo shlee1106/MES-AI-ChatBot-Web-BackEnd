@@ -51,7 +51,7 @@ class ChatControllerTest {
         company = new Company(1L, "MES", now);
         member = new UserMember(2L, company, "Kim",
                                 "pw", "k@example.com", UserRole.ROLE_USER, now);
-        session = new ChatSession("session-1", company, member, "Help", now);
+        session = new ChatSession("session-1", member, "Help", now);
         when(userService.getCurrentUserEntity()).thenReturn(member);
     }
 
@@ -60,7 +60,7 @@ class ChatControllerTest {
     void asksLlmWithMockedAnswerAndMapsBadRequestAndUnauthorized() throws Exception {
         when(chatService.askToLlm(eq("session-1"), eq(member), any(), any()))
                 .thenReturn(
-                        new ChatHistory("chat-1", company, member, session,
+                        new ChatHistory("chat-1", member, session,
                                         "mocked answer", now, "assistant"));
         var body = mapper.writeValueAsString(new UserQuestionDto("질문"));
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
@@ -95,7 +95,7 @@ class ChatControllerTest {
     @DisplayName("대화 기록 접근 시 결과 혹은 오류를 반환하는가?")
     void readsAndDeletesHistoryAndSessions() throws Exception {
         when(sessionService.getChatHistories("session-1", member)).thenReturn(
-                List.of(new ChatHistory("chat-1", company, member,
+                List.of(new ChatHistory("chat-1", member,
                                         session, "hello", now, "user")));
         mvc.perform(get("/api/v1/chat/sessions/session-1/histories")).andExpect(status().isOk())
            .andExpect(jsonPath("$[0].message").value("hello"));

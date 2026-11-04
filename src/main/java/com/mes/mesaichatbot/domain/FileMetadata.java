@@ -41,14 +41,6 @@ public class FileMetadata {
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 
-    /**
-     * 공유 여부(shared) 기본값을 false로 설정하는 생성자.
-     */
-    public FileMetadata(String fileId, UserMember employeeId, String originName, String fileType,
-                        LocalDateTime uploadedAt) {
-        this(fileId, employeeId, originName, fileType, false, uploadedAt);
-    }
-
     public Company getCompanyId() {
         return employeeId.getCompanyId();
     }

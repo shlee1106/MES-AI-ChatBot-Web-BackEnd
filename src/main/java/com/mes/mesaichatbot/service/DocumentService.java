@@ -25,8 +25,24 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
-    private final ObjectProvider<LlmChunkingService> llmChunkingServiceProvider;
+    private final LlmChunkingService llmChunkingService;
     private final ObjectProvider<VectorStore> vectorStoreProvider;
+
+    /**
+     * VectorStore를 얻습니다.
+     *
+     * @return {@link VectorStore}
+     * @throws UnsupportedOperationException VectorStore를 사용할 수 없는 경우 발생
+     */
+    private VectorStore getVectorStore() throws UnsupportedOperationException {
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+
+        if (vectorStore == null) {
+            throw new UnsupportedOperationException("VectorStore를 사용할 수 없습니다.");
+        }
+
+        return vectorStore;
+    }
 
     /**
      * 문서를 파싱하여 UploadDataDetailsDto List를 반환합니다.
@@ -39,7 +55,8 @@ public class DocumentService {
      * @throws IOException              파일 데이터가 잘못됨.
      * @throws IllegalArgumentException 파일이 잘못된 이름을 가지고 있음.
      */
-    public List<UploadDataDetailsDto> parse(MultipartFile file, Long companyId, String fileId, LocalDateTime createdAt) throws IOException, IllegalArgumentException {
+    public List<UploadDataDetailsDto> parse(MultipartFile file, Long companyId, String fileId,
+                                            LocalDateTime createdAt) throws IOException, IllegalArgumentException {
         // 문서 파서 준비
         List<DocumentParser> parsers = List.of(
                 new DocxParser(companyId, fileId, createdAt),
@@ -58,13 +75,13 @@ public class DocumentService {
 
         // 확장자에 따라서 적절한 파서 꺼내기
         DocumentParser parser = parsers.stream()
-                .filter(p -> p.supports(filename))
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "지원하지 않는 파일 형식입니다: " + filename
-                        )
-                );
+                                       .filter(p -> p.supports(filename))
+                                       .findFirst()
+                                       .orElseThrow(() ->
+                                                            new IllegalArgumentException(
+                                                                    "지원하지 않는 파일 형식입니다: " + filename
+                                                            )
+                                       );
 
         // 문서 처리 시도
         try (InputStream stream = file.getInputStream()) {
@@ -80,13 +97,8 @@ public class DocumentService {
      * @throws IllegalStateException VectorStore 또는 LLM을 사용할 수 없음
      */
     public void saveToVectorStore(List<UploadDataDetailsDto> uploadDataDetailsDto, String fileType)
-            throws IllegalStateException {
-        LlmChunkingService llmChunkingService = llmChunkingServiceProvider.getIfAvailable();
-        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
-
-        if (llmChunkingService == null || vectorStore == null) {
-            throw new IllegalStateException("VectorStore 또는 LLM을 사용할 수 없습니다.");
-        }
+            throws IllegalStateException, UnsupportedOperationException {
+        VectorStore vectorStore = getVectorStore();
 
         log.info("Saving to vector store...");
         List<Document> data;
@@ -124,13 +136,8 @@ public class DocumentService {
      *
      * @param fileId 삭제할 파일의 식별자 ID
      */
-    public void deleteFromVectorStore(String fileId) throws IllegalStateException {
-        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
-
-        if (vectorStore == null) {
-            log.warn("VectorStore를 사용할 수 없습니다. 실행을 취소합니다.");
-            return;
-        }
+    public void deleteFromVectorStore(String fileId) throws IllegalStateException, UnsupportedOperationException {
+        VectorStore vectorStore = getVectorStore();
 
         // 필터링 구문 생성
         String filterExpression = String.format("fileId == '%s'", fileId);

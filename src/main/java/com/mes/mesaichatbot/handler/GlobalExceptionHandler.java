@@ -74,11 +74,10 @@ public class GlobalExceptionHandler {
     /**
      * 존재하지 않는 API 경로로 요청했을 때 404 Not Found를 반환하는 예외 처리 메서드
      *
-     * @param e 발생한 {@link NoHandlerFoundException} 또는 {@link NoResourceFoundException}
      * @return 존재하지 않는 API 안내 메시지
      */
     @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
-    public ResponseEntity<Map<String, String>> handleNoHandlerFoundException(Exception e) {
+    public ResponseEntity<Map<String, String>> handleNoHandlerFoundException() {
         // 매핑되지 않은 잘못된 URL 호출 시 404 상태 코드와 안내 문구 반환
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
@@ -88,12 +87,10 @@ public class GlobalExceptionHandler {
     /**
      * API 주소는 존재하지만 지원하지 않는 HTTP 메서드(예: POST 전용에 GET 요청)로 호출했을 때 처리(405 Method Not Allowed)
      *
-     * @param e 발생한 {@link HttpRequestMethodNotSupportedException}
      * @return 지원하지 않는 메서드 안내 메시지
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, String>> handleMethodNotSupportedException(
-            HttpRequestMethodNotSupportedException e
     ) {
         // 허용되지 않은 HTTP 메서드로 요청 시 405 상태 코드와 안내 문구 반환
         return ResponseEntity
@@ -104,12 +101,10 @@ public class GlobalExceptionHandler {
     /**
      * 요청 JSON 본문 형식이 깨졌거나 Enum(예: UserRole)에 없는 잘못된 값을 보냈을 때 처리(400 Bad Request)
      *
-     * @param e 발생한 {@link HttpMessageNotReadableException}
      * @return 요청 데이터 형식 오류 안내 메시지
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleMessageNotReadableException(
-            HttpMessageNotReadableException e
     ) {
         // JSON 역직렬화(파싱) 실패 시 400 상태 코드와 안내 문구 반환
         return ResponseEntity
@@ -120,12 +115,10 @@ public class GlobalExceptionHandler {
     /**
      * 업로드한 파일 크기가 설정된 제한 용량(10MB)을 초과했을 때 처리(413 Content Too Large)
      *
-     * @param e 발생한 {@link MaxUploadSizeExceededException}
      * @return 파일 크기 초과 안내 메시지
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, String>> handleMaxUploadSizeExceededException(
-            MaxUploadSizeExceededException e
     ) {
         // 허용된 최대 파일 업로드 용량(10MB) 초과 시 413 상태 코드와 안내 문구 반환
         return ResponseEntity

@@ -2,11 +2,11 @@ package com.mes.mesaichatbot.llm.service;
 
 import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
-import com.mes.mesaichatbot.domain.Company;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.llm.dto.UserQuestionDto;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 import com.mes.mesaichatbot.repository.ChatSessionRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -15,6 +15,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class LlmChatService {
     /**
      * 사용자의 질문이 들어갈 템플릿.
@@ -62,17 +64,37 @@ public class LlmChatService {
             후속 질문은 하지 마시고, 답변은 3줄 내외로 하십시오.
             <!-- END OF SYSTEM PROMPT -->""";
     private final LlmChatHistoryService chatHistoryService;
-    private final ChatClient chatClient;
-    private final VectorStore vectorStore;
+    private final ObjectProvider<ChatClient.Builder> chatClientProvider;
+    private final ObjectProvider<VectorStore> vectorStoreProvider;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatHistoryRepository chatHistoryRepository;
 
-    public LlmChatService(LlmChatHistoryService chatHistoryService, ChatClient.Builder chatClient, VectorStore vectorStore, ChatSessionRepository chatSessionRepository, ChatHistoryRepository chatHistoryRepository) {
-        this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
-        this.chatHistoryService = chatHistoryService;
-        this.vectorStore = vectorStore;
-        this.chatSessionRepository = chatSessionRepository;
-        this.chatHistoryRepository = chatHistoryRepository;
+    /**
+     * ChatClient를 얻습니다.
+     *
+     * @return {@link ChatClient}
+     * @throws UnsupportedOperationException ChatClient를 사용할 수 없을 때 발생
+     */
+    private ChatClient getChatClient() throws UnsupportedOperationException {
+        ChatClient.Builder builder = chatClientProvider.getIfAvailable();
+        if (builder == null) {
+            throw new UnsupportedOperationException("ChatClient를 사용할 수 없습니다.");
+        }
+        return builder.defaultSystem(SYSTEM_PROMPT).build();
+    }
+
+    /**
+     * VectorStore를 얻습니다.
+     *
+     * @return {@link VectorStore}
+     * @throws UnsupportedOperationException VectorStore를 사용할 수 없을 때 발생
+     */
+    private VectorStore getVectorStore() throws UnsupportedOperationException {
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+        if (vectorStore == null) {
+            throw new UnsupportedOperationException("VectorStore를 사용할 수 없습니다.");
+        }
+        return vectorStore;
     }
 
     /**
@@ -89,9 +111,12 @@ public class LlmChatService {
      * @throws IllegalStateException    LLM 응답이 비어 있을 경우 발생 (502)
      */
     @Transactional
-    public ChatHistory askToLlm(String sessionId, UserMember member, LocalDateTime requestedAt, UserQuestionDto userQuestion)
+    public ChatHistory askToLlm(String sessionId, UserMember member, LocalDateTime requestedAt,
+                                UserQuestionDto userQuestion)
             throws IllegalArgumentException, AccessDeniedException, ResponseStatusException, IllegalStateException {
-        Company company = member.getCompanyId();
+        ChatClient chatClient = getChatClient();
+        VectorStore vectorStore = getVectorStore();
+
 
         // URL 파라미터의 UUID 파싱 시도
         UUID sessionUuid = UUID.fromString(sessionId);
@@ -120,9 +145,13 @@ public class LlmChatService {
         String formattedQuestion = USER_QUESTION_TEMPLATE.formatted(userQuestion.message());
 
         // 문서 RAG 검색 도구 생성
-        RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(VectorStoreDocumentRetriever.builder().similarityThreshold(0.5).vectorStore(vectorStore).build()).build();
+        RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(
+                                                                                      VectorStoreDocumentRetriever.builder().similarityThreshold(0.5).vectorStore(
+                                                                                              vectorStore).build())
+                                                                              .build();
         // LLM 요청 객체 정의 및 요청
-        ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages).user(formattedQuestion).call();
+        ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages)
+                                                         .user(formattedQuestion).call();
 
         // LLM의 답변 임시 저장
         String llmAnswer = response.content();
@@ -140,13 +169,15 @@ public class LlmChatService {
 
         // 대화 내역 기록
         messages.add(UserMessage.builder().metadata(Map.of("recordedAt", requestedAt)).text(formattedQuestion).build());
-        messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt)).content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
+        messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt))
+                                     .content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
 
         // Ai 답변 결과를 조립 (null = 기본값 사용)
-        ChatHistory chatResult = new ChatHistory(null, company, member, session, llmAnswer, respondedAt, "assistant");
+        ChatHistory chatResult = new ChatHistory(null, member, session, llmAnswer, respondedAt, "assistant");
 
         // 유저 질문 결과 조립
-        ChatHistory userHistory = new ChatHistory(null, company, member, session, userQuestion.message(), requestedAt, "user");
+        ChatHistory userHistory = new ChatHistory(null, member, session, userQuestion.message(), requestedAt,
+                                                  "user");
 
         // 대화내역 저장
         chatHistoryRepository.saveAll(List.of(userHistory, chatResult));

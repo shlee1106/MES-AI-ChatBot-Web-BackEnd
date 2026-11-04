@@ -1,0 +1,5 @@
+*.java text eol=crlf
+gradlew text eol=lf
+Dockerfile text eol=lf
+*.bat text eol=crlf
+*.jar binary

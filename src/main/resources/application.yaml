@@ -1,3 +1,57 @@
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+  web:
+    resources:
+      add-mappings: false
   application:
     name: MESAIChatBotWebBackEnd
+  servlet:
+    encoding:
+      charset: UTF-8
+      force-response: true
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    hikari:
+      connection-test-query: 'SELECT 1'
+      max-lifetime: 1800000
+      idle-timeout: 600000
+      validation-timeout: 3000
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/${MYSQL_DB:JWTtestdb}?useSSL=${MYSQL_USE_SSL:false}&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}        # 실제 MySQL 계정명
+    password: ${MYSQL_PASSWORD}     # 실제 MySQL 비밀번호
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: 587
+    username: ${SMTP_USERNAME} #발신자 이메일
+    password: ${SMTP_PASSWORD} #이메일 앱 비밀번호 16자리
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+jwt:
+  secret: ${JWT_SECRET:z8$Vq3*B!yE(G+KbPeShVmYq3t6w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G-Seven!}
+  access-token-expire-time: 600000
+  refresh-token-expire-time: 2592000000
+management:
+  endpoint:
+    health:
+      show-details: when-authorized
+      roles: MASTER
+app:
+  frontend-hostname: ${HOSTNAME:http://localhost:3000}

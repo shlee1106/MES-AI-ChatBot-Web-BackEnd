@@ -1,5 +1,6 @@
 package com.mes.mesaichatbot.handler;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  * 애플리케이션 전역에서 발생하는 예외를 가로채어 공통 규격의 HTTP 응답으로 변환하는 핸들러.
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     /**
@@ -53,6 +55,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorMessage);
+    }
+
+    /**
+     * LLM 서비스를 이용할 수 없을 때 발생하는 예외를 처리(503 Service Unavailable)
+     *
+     * @param e {@link UnsupportedOperationException}
+     * @return LLM 서비스 이용 불가 안내 메시지
+     */
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<Map<String, String>> handleUnsupportedOperationException(UnsupportedOperationException e) {
+        log.error("LLM 서비스를 이용할 수 없습니다: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                Map.of("error", "LLM 서비스를 이용할 수 없습니다.")
+        );
     }
 
     /**

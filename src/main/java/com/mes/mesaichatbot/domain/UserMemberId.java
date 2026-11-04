@@ -17,10 +17,9 @@ import java.io.Serializable;
 // UserMember와 동일한 객체로 인식하기 위한 어노테이션
 @Embeddable
 public class UserMemberId implements Serializable {
-
-    @Column(name = "company_id")
+    @Column(name = "company_id", nullable = false)
     private Long companyId;
 
-    @Column(name = "employee_id")
+    @Column(name = "employee_id", nullable = false)
     private Long employeeId;
 }

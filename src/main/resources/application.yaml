@@ -5,13 +5,9 @@ spring:
   web:
     resources:
       add-mappings: false
+  application:
+    name: MESAIChatBotWebBackEnd
   ai:
-    vectorstore:
-      mongodb:
-        initialize-schema: true
-    model:
-      embedding: ollama
-      chat: openai
     ollama:
       embedding:
         model:
@@ -24,15 +20,6 @@ spring:
       base-url: ${LLM_API_URL}
       chat:
         model: ${LLM_MODEL:gpt-5.6-luna}
-  application:
-    name: MESAIChatBotWebBackEnd
-  mongodb:
-    database: ${MONGODB_DATABASE_NAME:mes}
-    authentication-database: admin
-    host: ${MONGODB_HOST:localhost}
-    port: ${MONGODB_PORT:27017}
-    username: ${MONGODB_USERNAME}
-    password: ${MONGODB_PASSWORD}
   servlet:
     encoding:
       charset: UTF-8
@@ -70,19 +57,11 @@ spring:
           auth: true
           starttls:
             enable: true
-#  autoconfigure:
-#    exclude:
-#      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration
-#      - org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration
-#      - org.springframework.ai.vectorstore.mongodb.autoconfigure.MongoDBAtlasVectorStoreAutoConfiguration
 jwt:
   secret: ${JWT_SECRET:z8$Vq3*B!yE(G+KbPeShVmYq3t6w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G-Seven!}
   access-token-expire-time: 600000
   refresh-token-expire-time: 2592000000
 management:
-  health:
-    mail:
-      enabled: false
   endpoint:
     health:
       show-details: when-authorized

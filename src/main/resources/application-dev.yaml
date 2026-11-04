@@ -1,0 +1,16 @@
+spring:
+  mongodb:
+    database: ${MONGODB_DATABASE_NAME:mes}
+    authentication-database: admin
+    host: ${MONGODB_HOST:localhost}
+    port: ${MONGODB_PORT:27017}
+    username: ${MONGODB_USERNAME}
+    password: ${MONGODB_PASSWORD}
+  ai:
+    vectorstore:
+      mongodb:
+        initialize-schema: true
+    model:
+      embedding: ollama
+      chat: openai
+    

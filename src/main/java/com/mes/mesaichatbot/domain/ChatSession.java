@@ -16,14 +16,10 @@ public class ChatSession {
     @Column(name = "session_id")
     private String sessionId;
 
-    @JoinColumn(name = "company_id", nullable = false)
-    @ManyToOne
-    private Company companyId;
-
     // UserMember가 복합키(company_id, employee_id)를 사용하므로 2개 컬럼을 모두 매핑
     @ManyToOne
     @JoinColumns({
-            @JoinColumn(name = "company_id", referencedColumnName = "company_id", insertable = false, updatable = false),
+            @JoinColumn(name = "company_id", referencedColumnName = "company_id", nullable = false),
             @JoinColumn(name = "employee_id", referencedColumnName = "employee_id", nullable = false)
     })
     private UserMember employeeId;
@@ -33,4 +29,8 @@ public class ChatSession {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    public Company getCompanyId() {
+        return employeeId.getCompany();
+    }
 }

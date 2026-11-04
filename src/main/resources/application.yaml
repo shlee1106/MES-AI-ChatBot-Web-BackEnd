@@ -7,19 +7,6 @@ spring:
       add-mappings: false
   application:
     name: MESAIChatBotWebBackEnd
-  ai:
-    ollama:
-      embedding:
-        model:
-          ${EMBEDDING_MODEL:embeddinggemma-2:latest}
-      base-url: ${OLLAMA_HOST:http://localhost}:${OLLAMA_PORT:11434}
-      init:
-        pull-model-strategy: when_missing
-    openai:
-      api-key: ${LLM_API_KEY}
-      base-url: ${LLM_API_URL}
-      chat:
-        model: ${LLM_MODEL:gpt-5.6-luna}
   servlet:
     encoding:
       charset: UTF-8

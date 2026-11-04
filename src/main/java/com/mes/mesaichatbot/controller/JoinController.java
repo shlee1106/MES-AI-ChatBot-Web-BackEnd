@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.user.dto.JoinRequestDTO;
-import com.mes.mesaichatbot.domain.user.service.UserService;
+import com.mes.mesaichatbot.dto.JoinRequestDTO;
+import com.mes.mesaichatbot.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;

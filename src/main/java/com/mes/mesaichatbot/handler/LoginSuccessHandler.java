@@ -1,8 +1,8 @@
 package com.mes.mesaichatbot.handler;
 
 
-import com.mes.mesaichatbot.domain.jwt.entity.RefreshEntity;
-import com.mes.mesaichatbot.domain.jwt.repository.RefreshRepository;
+import com.mes.mesaichatbot.domain.RefreshEntity;
+import com.mes.mesaichatbot.repository.RefreshRepository;
 import com.mes.mesaichatbot.util.JWTUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,7 +26,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 
     @Override
-    public void onAuthenticationSuccess(@NonNull HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+    public void onAuthenticationSuccess(@NonNull HttpServletRequest request, HttpServletResponse response,
+                                        Authentication authentication) throws IOException {
         String username = authentication.getName();
         String role = authentication.getAuthorities().iterator().next().getAuthority();
 

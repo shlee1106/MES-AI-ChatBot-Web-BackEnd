@@ -1,6 +1,6 @@
 package com.mes.mesaichatbot.filter;
 
-import com.mes.mesaichatbot.domain.user.dto.LoginRequestDTO;
+import com.mes.mesaichatbot.dto.LoginRequestDTO;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -32,7 +32,8 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
     // 해당 필터가 작동할 정확한 조건 설정
     // 무조건 POST방식이어야 하며, 주소가 "/api/v1/login"일 때만 해당 필터가 낚아챔
-    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.pathPattern(HttpMethod.POST, "/api/v1/login");
+    private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.pathPattern(
+            HttpMethod.POST, "/api/v1/login");
 
     // 로그인 성공했을 때 JWT 토큰을 발급해 줄 담당자
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
@@ -109,7 +110,8 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
      * 로그인 최종 성공 상태
      */
     @Override
-    protected void successfulAuthentication(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain,
+    protected void successfulAuthentication(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+                                            @NonNull FilterChain chain,
                                             @NonNull Authentication authResult) throws IOException, ServletException {
         authenticationSuccessHandler.onAuthenticationSuccess(request, response, authResult);
     }

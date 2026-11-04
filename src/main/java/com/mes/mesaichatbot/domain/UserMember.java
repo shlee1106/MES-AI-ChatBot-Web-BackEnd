@@ -1,6 +1,5 @@
 package com.mes.mesaichatbot.domain;
 
-import com.mes.mesaichatbot.domain.user.entity.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jspecify.annotations.NonNull;

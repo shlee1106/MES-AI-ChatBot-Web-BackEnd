@@ -1,9 +1,9 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.config.MockMvcTestConfig;
-import com.mes.mesaichatbot.domain.user.dto.JoinRequestDTO;
-import com.mes.mesaichatbot.domain.user.entity.UserRole;
-import com.mes.mesaichatbot.domain.user.service.UserService;
+import com.mes.mesaichatbot.domain.UserRole;
+import com.mes.mesaichatbot.dto.JoinRequestDTO;
+import com.mes.mesaichatbot.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

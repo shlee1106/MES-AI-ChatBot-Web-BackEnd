@@ -1,10 +1,10 @@
 package com.mes.mesaichatbot.config;
 
-import com.mes.mesaichatbot.domain.jwt.repository.RefreshRepository;
 import com.mes.mesaichatbot.filter.CustomLogoutFilter;
 import com.mes.mesaichatbot.filter.JWTFilter;
 import com.mes.mesaichatbot.filter.LoginFilter;
 import com.mes.mesaichatbot.handler.LoginSuccessHandler;
+import com.mes.mesaichatbot.repository.RefreshRepository;
 import com.mes.mesaichatbot.util.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -99,9 +99,9 @@ public class SecurityConfig {
     @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""
-                    ROLE_MASTER > ROLE_MANAGER
-                    ROLE_MANAGER > ROLE_USER
-                """);
+                                                           ROLE_MASTER > ROLE_MANAGER
+                                                           ROLE_MANAGER > ROLE_USER
+                                                       """);
     }
 
     /**
@@ -121,11 +121,13 @@ public class SecurityConfig {
 
                 // 1. 프리패스 구역
                 // 로그인, 로그아웃, 재발급, 서버 상태 체크 등
-                .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/", "/actuator/health", "/api/v1/password/**", "/robots.txt").permitAll()
+                .requestMatchers("/api/v1/login", "/api/v1/logout", "/api/v1/jwt/refresh", "/error", "/api/v1/",
+                                 "/actuator/health", "/api/v1/password/**", "/robots.txt").permitAll()
 
                 // 2. 계정 생성 API (중간관리자 이상만 접근 가능)
                 // 서열에 의해 MASTER도 자동 통과
-                .requestMatchers("/api/v1/admin/users").hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
+                .requestMatchers("/api/v1/admin/users")
+                .hasRole("MANAGER") // 계정 생성 가능(MASTER는 중간,하위관리자 생성, MANAGER는 하위관리자만 생성)
 
                 // 3. 권한별 접근 경로
                 .requestMatchers("/actuator/**").hasRole("MASTER") // Actuator 상세 엔드포인트는 최고 관리자 전용
@@ -138,13 +140,15 @@ public class SecurityConfig {
         // 필터 배치 순서 설정(매우중요)
         http
                 // 기존 로그아웃 필터가 작동하기 전, 내가 만든 CustomLogoutFilter 먼저 실행
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository, new ObjectMapper()), org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository, new ObjectMapper()),
+                                 org.springframework.security.web.authentication.logout.LogoutFilter.class)
 
                 // 기본 아이디,비번 검사 필터 앞에, 내가 만든 JWTFilter(토큰 검사기) 먼저 배치(모든 요청에서 토큰 부터 검사)
                 .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
 
                 // 기본 아이디, 비번 검사 필터 자리를 내가 만든 LoginFilter(JSON 로그인 처리기)로 갈아 끼움
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
+                             UsernamePasswordAuthenticationFilter.class);
         // JWT 특화 설정(무상태성)
         http.sessionManagement(session -> session
                 // 서버의 메모리(세션)에 유저 정보를 기억하지 않겠다고 선언(STATELESS)

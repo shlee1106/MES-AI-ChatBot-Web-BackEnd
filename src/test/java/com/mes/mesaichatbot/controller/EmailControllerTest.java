@@ -1,9 +1,9 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.config.MockMvcTestConfig;
-import com.mes.mesaichatbot.domain.email.dto.PasswordResetRequestDTO;
-import com.mes.mesaichatbot.domain.email.dto.PasswordUpdateRequestDTO;
-import com.mes.mesaichatbot.domain.email.serivce.PasswordResetService;
+import com.mes.mesaichatbot.dto.PasswordResetRequestDTO;
+import com.mes.mesaichatbot.dto.PasswordUpdateRequestDTO;
+import com.mes.mesaichatbot.service.PasswordResetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

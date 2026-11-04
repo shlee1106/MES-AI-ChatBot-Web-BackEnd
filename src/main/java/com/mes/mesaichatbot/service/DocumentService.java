@@ -1,7 +1,6 @@
 package com.mes.mesaichatbot.service;
 
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import com.mes.mesaichatbot.llm.service.LlmChunkingService;
 import com.mes.mesaichatbot.parser.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

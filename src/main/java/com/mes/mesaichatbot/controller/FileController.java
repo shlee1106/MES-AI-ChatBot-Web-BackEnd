@@ -1,10 +1,10 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.user.service.UserService;
 import com.mes.mesaichatbot.dto.FileDeleteResponseDto;
 import com.mes.mesaichatbot.dto.FileResponseDto;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.service.FileService;
+import com.mes.mesaichatbot.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;

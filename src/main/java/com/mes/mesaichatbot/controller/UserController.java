@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.user.dto.UserInfoResponseDTO;
-import com.mes.mesaichatbot.domain.user.service.UserService;
+import com.mes.mesaichatbot.dto.UserInfoResponseDTO;
+import com.mes.mesaichatbot.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,7 +86,8 @@ public class UserController {
      * @return 응답 메시지.
      */
     @PatchMapping("/{target}")
-    public ResponseEntity<String> updateRole(@PathVariable("target") Long targetEmployeeId, @RequestBody String newRoleCode) {
+    public ResponseEntity<String> updateRole(@PathVariable("target") Long targetEmployeeId,
+                                             @RequestBody String newRoleCode) {
         try {
             // 등급 수정
             userService.updateRole(targetEmployeeId, newRoleCode);

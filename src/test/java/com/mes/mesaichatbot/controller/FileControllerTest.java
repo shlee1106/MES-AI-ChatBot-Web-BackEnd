@@ -1,9 +1,9 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.config.MockMvcTestConfig;
-import com.mes.mesaichatbot.domain.user.service.UserService;
 import com.mes.mesaichatbot.dto.FileUploadResponseDto;
 import com.mes.mesaichatbot.service.FileService;
+import com.mes.mesaichatbot.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

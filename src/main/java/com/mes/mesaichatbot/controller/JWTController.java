@@ -1,6 +1,6 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.jwt.service.RefreshService;
+import com.mes.mesaichatbot.service.RefreshService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

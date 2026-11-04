@@ -1,6 +1,6 @@
 package com.mes.mesaichatbot.filter;
 
-import com.mes.mesaichatbot.domain.jwt.repository.RefreshRepository;
+import com.mes.mesaichatbot.repository.RefreshRepository;
 import com.mes.mesaichatbot.util.JWTUtil;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;

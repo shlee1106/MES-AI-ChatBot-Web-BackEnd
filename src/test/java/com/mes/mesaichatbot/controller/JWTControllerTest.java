@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.config.MockMvcTestConfig;
-import com.mes.mesaichatbot.domain.jwt.service.RefreshService;
+import com.mes.mesaichatbot.service.RefreshService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

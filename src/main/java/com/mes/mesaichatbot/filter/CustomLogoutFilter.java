@@ -1,7 +1,7 @@
 package com.mes.mesaichatbot.filter;
 
 
-import com.mes.mesaichatbot.domain.jwt.repository.RefreshRepository;
+import com.mes.mesaichatbot.repository.RefreshRepository;
 import com.mes.mesaichatbot.util.JWTUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -31,12 +31,14 @@ public class CustomLogoutFilter extends GenericFilterBean {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response,
+                         FilterChain chain) throws IOException, ServletException {
         // HTTP 전용 객체로 변환하여 실제 로그아웃 로직(아래 메서드)으로 넘겨줌
         doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
     }
 
-    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+    private void doFilter(HttpServletRequest request, HttpServletResponse response,
+                          FilterChain filterChain) throws IOException, ServletException {
 
         // [경로 검사] 프론트엔드가 정확히 "/api/v1/logout" 경로로 요청했는지 확인
         String requestUri = request.getRequestURI();

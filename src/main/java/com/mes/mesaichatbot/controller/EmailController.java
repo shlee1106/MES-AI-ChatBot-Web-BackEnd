@@ -1,8 +1,8 @@
 package com.mes.mesaichatbot.controller;
 
-import com.mes.mesaichatbot.domain.email.dto.PasswordResetRequestDTO;
-import com.mes.mesaichatbot.domain.email.dto.PasswordUpdateRequestDTO;
-import com.mes.mesaichatbot.domain.email.serivce.PasswordResetService;
+import com.mes.mesaichatbot.dto.PasswordResetRequestDTO;
+import com.mes.mesaichatbot.dto.PasswordUpdateRequestDTO;
+import com.mes.mesaichatbot.service.PasswordResetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;

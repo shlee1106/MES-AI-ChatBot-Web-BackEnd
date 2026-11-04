@@ -75,7 +75,7 @@ public class FileService {
         String originName = file.getOriginalFilename();
         String fileType = StringUtils.getFilenameExtension(originName);
 
-        // DB에 삽입할 새 행 생성 (shared 기본값 false 적용)
+        // DB에 삽입할 새 행(shared) 생성 
         FileMetadata originalFile = new FileMetadata(fileId.toString(), member, file.getOriginalFilename(), fileType,
                                                      shared, requestedAt);
 

@@ -1,12 +1,12 @@
 package com.mes.mesaichatbot.filter;
 
+import com.mes.mesaichatbot.config.MockMvcTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -21,12 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@DisplayName("LoginFilter")
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(LoginFilter.class)
+@Import(MockMvcTestConfig.class)
 class LoginFilterTest {
-    @Mock
+    @MockitoBean
     AuthenticationManager authenticationManager;
-    @Mock
+    @MockitoBean
     AuthenticationSuccessHandler successHandler;
     LoginFilter filter;
 

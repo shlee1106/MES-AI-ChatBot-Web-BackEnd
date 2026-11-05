@@ -2,10 +2,12 @@ package com.mes.mesaichatbot.service;
 
 import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
+import com.mes.mesaichatbot.domain.FileMetadata;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.UserQuestionDto;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
 import com.mes.mesaichatbot.repository.ChatSessionRepository;
+import com.mes.mesaichatbot.repository.FileMetadataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,6 +17,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -68,6 +71,7 @@ public class LlmChatService {
     private final ObjectProvider<VectorStore> vectorStoreProvider;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatHistoryRepository chatHistoryRepository;
+    private final FileMetadataRepository fileMetadataRepository;
 
     /**
      * ChatClient를 얻습니다.
@@ -123,8 +127,9 @@ public class LlmChatService {
 
         // DB에서 대화 세션 조회 및 본인 소유 세션인지 권한 검증 (타인 세션이면 403 반환)
         ChatSession session = chatSessionRepository.findBySessionId(sessionId);
-        if (session != null && (!Objects.equals(session.getEmployeeId().getEmployeeId(), member.getEmployeeId())
-                || !Objects.equals(session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId()))) {
+        if (session != null && (!Objects.equals(session.getEmployeeId().getEmployeeId(),
+                                                member.getEmployeeId()) || !Objects.equals(
+                session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId()))) {
             throw new AccessDeniedException("본인의 대화방에만 질문할 수 있습니다.");
         }
 
@@ -141,14 +146,27 @@ public class LlmChatService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
+        // 접근 가능한 문서를 전부 가져옴
+        List<FileMetadata> accessibleDocuments =
+                fileMetadataRepository.findAccessibleFiles(member.getCompany(), member);
+
         // 사용자의 질문을 구분자로 감싸기
         String formattedQuestion = USER_QUESTION_TEMPLATE.formatted(userQuestion.message());
 
         // 문서 RAG 검색 도구 생성
         RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(
-                                                                                      VectorStoreDocumentRetriever.builder().similarityThreshold(0.5).vectorStore(
-                                                                                              vectorStore).build())
-                                                                              .build();
+                VectorStoreDocumentRetriever.builder()
+                                            .similarityThreshold(0.5)
+                                            .vectorStore(vectorStore)
+                                            .filterExpression(
+                                                    new FilterExpressionBuilder()
+                                                            .in("fileId", accessibleDocuments
+                                                                    .parallelStream()
+                                                                    .map(FileMetadata::getFileId)
+                                                                    .toList()
+                                                            )
+                                                            .build())
+                                            .build()).build();
         // LLM 요청 객체 정의 및 요청
         ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages)
                                                          .user(formattedQuestion).call();
@@ -165,19 +183,29 @@ public class LlmChatService {
         }
 
         // 답변 뒤에 면책 추가
-        llmAnswer = llmAnswer.concat("\n\n해당 정보는 정확하지 않을 수 있으며, 사측에서는 해당 답변으로 인해 발생하는 모든 피해에 대해 어떠한 책임도 지지 않습니다.");
+        llmAnswer = llmAnswer.concat("""
+                                             
+                                             
+                                             해당 정보는 정확하지 않을 수 있으며, 사측에서는 해당 답변으로 인해 \
+                                             발생하는 모든 피해에 대해 어떠한 책임도 지지 않습니다.""");
 
         // 대화 내역 기록
-        messages.add(UserMessage.builder().metadata(Map.of("recordedAt", requestedAt)).text(formattedQuestion).build());
-        messages.add(AssistantMessage.builder().properties(Map.of("recordedAt", respondedAt))
-                                     .content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer)).build());
+        messages.add(UserMessage.builder()
+                                .metadata(Map.of("recordedAt", requestedAt))
+                                .text(formattedQuestion)
+                                .build());
+        messages.add(AssistantMessage.builder()
+                                     .properties(Map.of("recordedAt", respondedAt))
+                                     .content(ASSISTANT_ANSWER_TEMPLATE.formatted(llmAnswer))
+                                     .build());
 
         // Ai 답변 결과를 조립 (null = 기본값 사용)
-        ChatHistory chatResult = new ChatHistory(null, member, session, llmAnswer, respondedAt, "assistant");
+        ChatHistory chatResult =
+                new ChatHistory(null, member, session, llmAnswer, respondedAt, "assistant");
 
         // 유저 질문 결과 조립
-        ChatHistory userHistory = new ChatHistory(null, member, session, userQuestion.message(), requestedAt,
-                                                  "user");
+        ChatHistory userHistory =
+                new ChatHistory(null, member, session, userQuestion.message(), requestedAt, "user");
 
         // 대화내역 저장
         chatHistoryRepository.saveAll(List.of(userHistory, chatResult));

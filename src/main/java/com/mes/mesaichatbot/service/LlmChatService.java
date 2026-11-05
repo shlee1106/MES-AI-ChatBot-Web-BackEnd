@@ -154,6 +154,7 @@ public class LlmChatService {
         String formattedQuestion = USER_QUESTION_TEMPLATE.formatted(userQuestion.message());
 
         // 문서 RAG 검색 도구 생성
+        // 접근 권한이 있는 문서만 포함
         RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(
                 VectorStoreDocumentRetriever.builder()
                                             .similarityThreshold(0.5)

@@ -1,5 +1,5 @@
 ### 파일 데이터 삭제 테스트 용
-DELETE http://localhost:8080/api/v1/files/delete/1
-
+DELETE http://localhost:8080/api/v1/files/31ea7569-9eae-40a7-b8df-7b97990842fd
+Authorization: {{Authorization}}
 
 ###

@@ -2,7 +2,6 @@ package com.mes.mesaichatbot.service;
 
 import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
-import com.mes.mesaichatbot.domain.FileMetadata;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.UserQuestionDto;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
@@ -147,8 +146,12 @@ public class LlmChatService {
         }
 
         // 접근 가능한 문서를 전부 가져옴
-        List<FileMetadata> accessibleDocuments =
-                fileMetadataRepository.findAccessibleFiles(member.getCompany(), member);
+        List<String> accessibleDocumentIds =
+                fileMetadataRepository.findAccessibleFileIds(member.getCompany(), member);
+
+        log.debug("User Requested Documents: {}", accessibleDocumentIds);
+        log.debug("Type of Documents: {}",
+                  accessibleDocumentIds.stream().map(value -> value.getClass().toString()).toList());
 
         // 사용자의 질문을 구분자로 감싸기
         String formattedQuestion = USER_QUESTION_TEMPLATE.formatted(userQuestion.message());
@@ -161,13 +164,9 @@ public class LlmChatService {
                                             .vectorStore(vectorStore)
                                             .filterExpression(
                                                     new FilterExpressionBuilder()
-                                                            .in("fileId", accessibleDocuments
-                                                                    .parallelStream()
-                                                                    .map(FileMetadata::getFileId)
-                                                                    .toList()
-                                                            )
-                                                            .build())
-                                            .build()).build();
+                                                            .in("fileId",
+                                                                accessibleDocumentIds.toArray())
+                                                            .build()).build()).build();
         // LLM 요청 객체 정의 및 요청
         ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages)
                                                          .user(formattedQuestion).call();

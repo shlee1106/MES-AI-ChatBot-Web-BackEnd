@@ -7,6 +7,8 @@ import com.mes.mesaichatbot.util.JWTUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -43,19 +45,21 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.setHeader("Authorization", "Bearer " + accessToken);
 
         // Refresh Token: 자바스크립트 접근이 원찬 차단되는 HttpOnly 쿠키로 굽기
-//        Cookie refreshCookie = new Cookie("Refresh-Token", refreshToken);
-//        refreshCookie.setHttpOnly(true); //XSS(크로스 사이트 스크립트) 해킹 방어
-//        refreshCookie.setSecure(false); // 현재 로컬 HTTP 환경이어서 false(추후 AWS 배포 시 true 변경)
-//        refreshCookie.setPath("/");
-//        refreshCookie.setMaxAge(30 * 24 * 60 * 60); //30일 유지
-//        response.addCookie(refreshCookie);
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                                                     .path("/")
+                                                     .httpOnly(true)
+                                                     .secure(true)
+                                                     .sameSite("Lax")
+                                                     .maxAge(30 * 24 * 60 * 60)
+                                                     .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // Body: 로그인 성공시 로그인 성공 메세지와 refreshToken body에 출력
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"message\":\"Login Success\", \"refreshToken\":\"%s\"}".formatted(refreshToken));
+        response.getWriter().write("{\"message\":\"Login Success\"}");
+//        response.getWriter().write("{\"message\":\"Login Success\", \"refreshToken\":\"%s\"}".formatted(refreshToken));
         response.getWriter().flush();
-
     }
 }

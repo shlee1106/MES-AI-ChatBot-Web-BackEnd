@@ -12,8 +12,8 @@ import java.util.List;
 public interface FileMetadataRepository extends CrudRepository<FileMetadata, String> {
     List<FileMetadata> findAllByEmployeeId(UserMember employeeId);
 
-    @Query("SELECT f FROM FileMetadata f WHERE (f.employeeId.company = :companyId AND f.shared = true) OR" +
+    @Query("SELECT f.fileId FROM FileMetadata f WHERE (f.employeeId.company = :companyId AND f.shared = true) OR" +
             "(f.employeeId.company = :companyId AND f.employeeId = :employeeId)")
-    List<FileMetadata> findAccessibleFiles(@Param("companyId") Company company,
-                                           @Param("employeeId") UserMember employeeId);
+    List<String> findAccessibleFileIds(@Param("companyId") Company company,
+                                       @Param("employeeId") UserMember employeeId);
 }

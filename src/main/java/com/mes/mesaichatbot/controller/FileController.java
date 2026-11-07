@@ -56,7 +56,7 @@ public class FileController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<FileUploadResponseDto> upload(@RequestPart("file") MultipartFile file,
-                                                        @RequestParam boolean shared) {
+                                                        @RequestParam(required = false, defaultValue = "false") boolean shared) {
         // 요청 시각 기록.
         LocalDateTime now = LocalDateTime.now();
         try {

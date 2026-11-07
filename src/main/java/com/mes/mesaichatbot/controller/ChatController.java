@@ -42,6 +42,9 @@ public class ChatController {
     @PostMapping(value = "/sessions/{sessionId}/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AskResponseDto> askToLlm(
             @PathVariable String sessionId, @RequestBody UserQuestionDto userQuestion) {
+        // GlobalExceptionHandler파일안에 예외처리 권한 넘김
+        // AccessDeniedException: 본인 소유의 대화방이 아닌 경우 403 Forbidden 반환
+        // IllegalArgumentException: 잘못된 UUID 형식 등의 요청 인자인 경우 400 Bad Request 반환
         try {
             // 요청 시각 기록
             LocalDateTime requestedAt = LocalDateTime.now();
@@ -53,14 +56,8 @@ public class ChatController {
             // 성공 시 답변 객체 반환
             return ResponseEntity.ok().body(AskResponseDto.from(chatResult));
         } catch (NullPointerException | UsernameNotFoundException e) {
-            // 인증 정보가 유효하지 않은 경우 401 반환
+            // 인증 정보가 유효하지 않은 경우 401 반환 (GlobalExceptionHandler의 404와 구분하기 위해 유지)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (AccessDeniedException e) {
-            // 본인 소유의 대화방이 아닌 경우 403 반환
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        } catch (IllegalArgumentException e) {
-            // 잘못된 UUID 형식 등의 요청 인자인 경우 400 반환
-            return ResponseEntity.badRequest().build();
         } catch (ResponseStatusException e) {
             // 세션 미존재(404) 또는 빈 질문(400) 상태 코드 반환
             return ResponseEntity.status(e.getStatusCode()).build();
@@ -81,6 +78,8 @@ public class ChatController {
     public ResponseEntity<ChatSessionResponseDto> createChatSession(
             @RequestBody ChatSessionRequestDto chatSessionRequest) {
         LocalDateTime requestedAt = LocalDateTime.now();
+        // GlobalExceptionHandler파일안에 예외처리 권한 넘김
+        // IllegalArgumentException: 잘못된 요청 인자인 경우 400 Bad Request 반환
         try {
             // 사용자의 정보를 UserService에서 가져옴
             UserMember member = userService.getCurrentUserEntity();
@@ -88,11 +87,8 @@ public class ChatController {
             // 생성 결과 반환
             return ResponseEntity.ok().body(ChatSessionResponseDto.from(session));
         } catch (UsernameNotFoundException | NullPointerException e) {
-            // 인증되지 않은 사용자인 경우 401 반환
+            // 인증되지 않은 사용자인 경우 401 반환 (GlobalExceptionHandler의 404와 구분하기 위해 유지)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (IllegalArgumentException e) {
-            // 잘못된 요청 인자인 경우 400 반환
-            return ResponseEntity.badRequest().build();
         }
     }
 
@@ -111,13 +107,13 @@ public class ChatController {
             // 각 Message로부터 DTO 매핑 후 반환
             return ResponseEntity.ok(ChatHistoryResponseDto.from(histories));
         } catch (IllegalArgumentException e) {
-            // 존재하지 않는 세션 ID인 경우 404 Not Found 반환
+            // 존재하지 않는 세션 ID인 경우 404 Not Found 반환 (GlobalExceptionHandler의 400과 구분하기 위해 유지)
             return ResponseEntity.notFound().build();
         } catch (AccessDeniedException e) {
             // 본인의 대화방이 아닌 경우 403 Forbidden 반환
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         } catch (NullPointerException | UsernameNotFoundException e) {
-            // 인증되지 않은 사용자인 경우 401 Unauthorized 반환
+            // 인증되지 않은 사용자인 경우 401 Unauthorized 반환 (GlobalExceptionHandler의 404와 구분하기 위해 유지)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -137,13 +133,13 @@ public class ChatController {
             llmChatSessionService.deleteChatSessions(sessionId, member);
             return ResponseEntity.ok("삭제되었습니다.");
         } catch (IllegalArgumentException e) {
-            // 세션을 찾을 수 없을 경우 404 반환
+            // 세션을 찾을 수 없을 경우 404 반환 (GlobalExceptionHandler의 400과 구분하기 위해 유지)
             return ResponseEntity.notFound().build();
         } catch (AccessDeniedException e) {
             // 본인의 세션이 아니면 403 반환
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (NullPointerException | UsernameNotFoundException e) {
-            // 인증되지 않은 사용자인 경우 401 반환
+            // 인증되지 않은 사용자인 경우 401 반환 (GlobalExceptionHandler의 404와 구분하기 위해 유지)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -160,7 +156,7 @@ public class ChatController {
             return ResponseEntity.ok(ChatSessionResponseDto.from(
                     llmChatSessionService.getChatSessions(userService.getCurrentUserEntity())));
         } catch (NullPointerException | UsernameNotFoundException e) {
-            // 인증되지 않은 사용자인 경우 401 반환
+            // 인증되지 않은 사용자인 경우 401 반환 (GlobalExceptionHandler의 404와 구분하기 위해 유지)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

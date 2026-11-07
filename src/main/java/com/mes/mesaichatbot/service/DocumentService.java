@@ -128,6 +128,7 @@ public class DocumentService {
         }
         // 저장 시도
         vectorStore.add(data);
+        log.info("Saved to vector store.");
     }
 
     /**

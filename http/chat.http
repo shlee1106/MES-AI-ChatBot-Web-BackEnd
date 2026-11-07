@@ -2,7 +2,7 @@
 
 POST http://localhost:8080/api/v1/chat/sessionrooms
 Content-Type: application/json
-Authorization:
+Authorization: {{Authorization}}
 
 {
   "title": "chicken"
@@ -18,11 +18,11 @@ Authorization:
 # 저장된 sessionId 재사용
 POST http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization:
+Authorization: {{Authorization}}
 
 
 {
-  "message": "치킨이 먹고 싶어. 결근해도 돼?"
+  "message": "대경선 첫차는 경산역에서 언제 출발?"
 }
 
 ### 이어서 질문
@@ -30,7 +30,7 @@ Authorization:
 # 저장된 sessionId 재사용
 POST http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/ask
 Content-Type: application/json
-Authorization:
+Authorization: {{Authorization}}
 
 
 {
@@ -39,6 +39,6 @@ Authorization:
 
 ### 대화 내역 조회
 GET http://localhost:8080/api/v1/chat/sessions/{{sessionId}}/histories
-Authorization:
+Authorization: {{Authorization}}
 
 ###

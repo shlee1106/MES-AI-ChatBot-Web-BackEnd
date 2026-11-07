@@ -62,7 +62,7 @@ public class FileService {
      * @throws UsernameNotFoundException 사용자 정보를 찾을 수 없을 경우.
      */
     @Transactional
-    public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, Boolean shared)
+    public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, boolean shared)
             throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();

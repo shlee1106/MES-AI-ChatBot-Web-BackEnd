@@ -8,6 +8,7 @@ import com.mes.mesaichatbot.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,14 +35,26 @@ public class FileController {
 
     /**
      * 파일 목록을 조회합니다.
+     * - 기본 호출: 로그인한 사용자의 개별 파일 목록 반환 (공용 파일 제외)
+     * - shared=true: 같은 회사의 공용 데이터 파일 목록 반환
+     * - employeeId 지정 (관리자): 해당 사원의 개별 파일 목록 반환
+     * - allCompany=true (관리자): 같은 회사의 전체 파일(공용 + 사원별 개별 파일) 반환
      *
      * @return JSON 형태의 {@link FileResponseDto} 객체 리스트.
      */
     @GetMapping
-    public ResponseEntity<List<FileResponseDto>> getFiles() {
+    public ResponseEntity<List<FileResponseDto>> getFiles(
+            @RequestParam(required = false) Boolean shared,
+            @RequestParam(required = false) Long employeeId,
+            @RequestParam(required = false, defaultValue = "false") boolean allCompany,
+            @RequestParam(required = false) Long companyId) {
         try {
-            // 파일 목록을 조회하여 DTO 형태로 반환
-            return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(userService.getCurrentUserEntity())));
+            var currentUser = userService.getCurrentUserEntity();
+            if (shared == null && employeeId == null && !allCompany && companyId == null) {
+                return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(currentUser)));
+            }
+            return ResponseEntity.ok(FileResponseDto.from(
+                    fileService.getFilesForQuery(currentUser, shared, employeeId, allCompany, companyId)));
         } catch (UsernameNotFoundException | NullPointerException e) {
             // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -49,21 +62,37 @@ public class FileController {
     }
 
     /**
-     * 개인 파일 업로드를 처리합니다.
+     * 개인 파일 또는 공용 데이터 파일 업로드를 처리합니다.
      *
-     * @param file 업로드된 {@link MultipartFile} 파일.
+     * @param file             업로드된 {@link MultipartFile} 파일.
+     * @param shared           공용 데이터 파일 여부.
+     * @param targetEmployeeId 관리자가 특정 사원의 개별 파일을 대리 업로드할 때 대상 사원번호.
+     * @param targetCompanyId  최고관리자가 특정 회사를 선택해 파일을 업로드할 때 대상 회사일련번호.
      * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileUploadResponseDto> upload(@RequestPart("file") MultipartFile file,
-                                                        @RequestParam(required = false, defaultValue = "false") boolean shared) {
+    public ResponseEntity<FileUploadResponseDto> upload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false, defaultValue = "false") boolean shared,
+            @RequestParam(required = false) Long targetEmployeeId,
+            @RequestParam(required = false) Long targetCompanyId) {
         // 요청 시각 기록.
         LocalDateTime now = LocalDateTime.now();
         try {
             // 성공 시 200 반환.
             // MongoDB 저장 여부와는 상관 없음.
-            FileUploadResponseDto responseDto = fileService.uploadFile(file, now, shared);
+            FileUploadResponseDto responseDto = (targetEmployeeId == null && targetCompanyId == null)
+                    ? fileService.uploadFile(file, now, shared)
+                    : fileService.uploadFile(file, now, shared, targetEmployeeId, targetCompanyId);
             return ResponseEntity.ok(responseDto);
+        } catch (DuplicateKeyException e) {
+            // 중복된 파일명 업로드 시 409 Conflict 반환
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                                 .body(new FileUploadResponseDto(e.getMessage(), null, null));
+        } catch (AccessDeniedException e) {
+            // 권한이 부족할 경우 403 Forbidden 반환
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                 .body(new FileUploadResponseDto(e.getMessage(), null, null));
         } catch (IOException | NotOfficeXmlFileException | NullPointerException e) {
             // 파일이 올바르지 않으면 400 반환
             return ResponseEntity.badRequest().body(

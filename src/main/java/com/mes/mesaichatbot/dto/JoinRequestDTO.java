@@ -16,8 +16,8 @@ public record JoinRequestDTO(
         Long employeeId,
 
         @NotBlank(message = "비밀번호는 필수 입력값입니다.")
-        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[@$!%*#?&])[A-Za-z0-9@$!%*#?&]{8,20}$",
-                message = "비밀번호는 8~20자리이며, 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.")
+        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[@$!%*#?&])[A-Za-z0-9@$!%*#?&]{8,256}$",
+                message = "비밀번호는 8-256자리여야 하며, 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.")
         String password,
 
         @NotBlank(message = "이름은 필수 입력값입니다.")

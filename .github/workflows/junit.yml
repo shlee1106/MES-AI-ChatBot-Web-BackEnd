@@ -1,0 +1,29 @@
+name: JUnit 단위 테스트
+on:
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+  push:
+
+jobs:
+  test:
+    name: 단위 테스트 실행
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v7
+      - name: JDK 설치
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+      - name: 테스트 실행
+        run: ./gradlew check --no-daemon
+      - name: 테스트 결과 보고서 생성
+        uses: mikepenz/action-junit-report@v6
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'

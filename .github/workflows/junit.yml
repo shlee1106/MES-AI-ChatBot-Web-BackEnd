@@ -20,6 +20,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+          cache: gradle
       - name: 테스트 실행
         run: ./gradlew check --no-daemon
       - name: 테스트 결과 보고서 생성

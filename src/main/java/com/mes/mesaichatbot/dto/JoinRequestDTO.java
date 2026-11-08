@@ -24,7 +24,7 @@ public record JoinRequestDTO(
         String username, // 사용자의 실제 이름
 
         @NotBlank(message = "이메일은 필수 입력값입니다.")
-        @Email(message = "유요한 이메일 형식이 아닙니다.")
+        @Email(message = "유효한 이메일 형식이 아닙니다.")
         String email,
 
         @NotNull(message = "권한은 필수 입력값입니다.")

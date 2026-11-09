@@ -71,37 +71,69 @@ public class FileController {
      * @return JSON 형태의 {@link FileUploadResponseDto} 객체.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileUploadResponseDto> upload(
-            @RequestPart("file") MultipartFile file,
+    public ResponseEntity<List<FileUploadResponseDto>> upload(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
             @RequestParam(required = false, defaultValue = "false") boolean shared,
             @RequestParam(required = false) Long targetEmployeeId,
             @RequestParam(required = false) Long targetCompanyId) {
-        // 요청 시각 기록.
-        LocalDateTime now = LocalDateTime.now();
+
         try {
-            // 성공 시 200 반환.
-            // MongoDB 저장 여부와는 상관 없음.
-            FileUploadResponseDto responseDto = (targetEmployeeId == null && targetCompanyId == null)
-                    ? fileService.uploadFile(file, now, shared)
-                    : fileService.uploadFile(file, now, shared, targetEmployeeId, targetCompanyId);
-            return ResponseEntity.ok(responseDto);
+            // 요청 시각 기록.
+            LocalDateTime now = LocalDateTime.now();
+            if (file != null) {
+                // 성공 시 200 반환.
+                // MongoDB 저장 여부와는 상관 없음.
+                FileUploadResponseDto responseDto = (targetEmployeeId == null && targetCompanyId == null)
+                        ? fileService.uploadFile(file, now, shared)
+                        : fileService.uploadFile(file, now, shared, targetEmployeeId, targetCompanyId);
+                return ResponseEntity.ok(List.of(responseDto));
+            } else if (files != null) {
+                List<FileUploadResponseDto> responseDto =
+                        files.stream()
+                             .map(f -> {
+                                 try {
+                                     return (targetEmployeeId == null || targetCompanyId == null) ?
+                                             fileService.uploadFile(
+                                                     f, now,
+                                                     shared)
+                                             : fileService.uploadFile(
+                                             f,
+                                             now,
+                                             shared,
+                                             targetEmployeeId,
+                                             targetCompanyId);
+                                 } catch (IOException e) {
+                                     throw new IllegalArgumentException(e);
+                                 }
+
+                             }).toList();
+                return ResponseEntity.ok(responseDto);
+            } else {
+                return ResponseEntity.badRequest()
+                                     .body(List.of(new FileUploadResponseDto(
+                                             "파일이 올바르지 않습니다.", null, null)));
+            }
         } catch (DuplicateKeyException e) {
             // 중복된 파일명 업로드 시 409 Conflict 반환
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                                 .body(new FileUploadResponseDto(e.getMessage(), null, null));
+                                 .body(List.of(new FileUploadResponseDto(
+                                         e.getMessage(), null, null)));
         } catch (AccessDeniedException e) {
             // 권한이 부족할 경우 403 Forbidden 반환
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                 .body(new FileUploadResponseDto(e.getMessage(), null, null));
-        } catch (IOException | NotOfficeXmlFileException | NullPointerException e) {
+                                 .body(List.of(new FileUploadResponseDto(
+                                         e.getMessage(), null, null)));
+        } catch (IOException | NotOfficeXmlFileException e) {
             // 파일이 올바르지 않으면 400 반환
             return ResponseEntity.badRequest().body(
-                    new FileUploadResponseDto("파일이 올바르지 않습니다.", null, null));
+                    List.of(new FileUploadResponseDto(
+                            "파일이 올바르지 않습니다.", null, null)));
         } catch (UsernameNotFoundException e) {
             // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                 .body(new FileUploadResponseDto(
-                                         "인증 정보가 올바르지 않습니다.", null, null));
+                                 .body(List.of(new FileUploadResponseDto(
+                                         "인증 정보가 올바르지 않습니다.", null, null)));
         }
     }
 
@@ -137,7 +169,8 @@ public class FileController {
             log.error("파일 삭제 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                                  .body(new FileDeleteResponseDto(
-                                         null, "삭제 중 예기치 못한 오류가 발생했습니다.", null));
+                                         null, "삭제 중 예기치 못한 오류가 발생했습니다.",
+                                         null));
         }
     }
 }

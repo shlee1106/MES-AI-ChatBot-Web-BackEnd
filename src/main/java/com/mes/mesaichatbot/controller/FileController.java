@@ -93,7 +93,7 @@ public class FileController {
                         files.stream()
                              .map(f -> {
                                  try {
-                                     return (targetEmployeeId == null || targetCompanyId == null) ?
+                                     return (targetEmployeeId == null && targetCompanyId == null) ?
                                              fileService.uploadFile(
                                                      f, now,
                                                      shared)

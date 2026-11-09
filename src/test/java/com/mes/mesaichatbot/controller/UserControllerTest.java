@@ -24,10 +24,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -37,16 +34,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WithMockUser(username = "admin", roles = "MASTER")
 @Import(MockMvcTestConfig.class)
 class UserControllerTest {
+    private final JoinRequestDTO joinRequest =
+            new JoinRequestDTO(1L, 2L, "Password1!",
+                               "홍길동", "user@example.com", UserRole.ROLE_USER);
     @MockitoBean
     UserService service;
     @Autowired
     MockMvc mvc;
     @Autowired
     ObjectMapper mapper;
-
-    private final JoinRequestDTO joinRequest =
-            new JoinRequestDTO(1L, 2L, "Password1!",
-                               "홍길동", "user@example.com", UserRole.ROLE_USER);
 
     @Test
     @DisplayName("내 정보와 관리자 사용자 목록 조회 및 미인증 시 오류를 반환하는가?")
@@ -69,7 +65,7 @@ class UserControllerTest {
         when(service.getUserForAdmin()).thenThrow(new NullPointerException());
         mvc.perform(get("/api/v1/users").with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(content().string(""));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -78,7 +74,7 @@ class UserControllerTest {
         when(service.getUserForAdmin()).thenThrow(new AccessDeniedException("forbidden"));
         mvc.perform(get("/api/v1/users").with(csrf()))
            .andExpect(status().isForbidden())
-           .andExpect(content().string(""));
+           .andExpect(jsonPath("$.error").value("forbidden"));
     }
 
     @Test
@@ -101,25 +97,25 @@ class UserControllerTest {
         mvc.perform(post("/api/v1/users").with(csrf())
                                          .contentType(MediaType.APPLICATION_JSON).content(body))
            .andExpect(status().isForbidden())
-           .andExpect(content().string("forbidden"));
+           .andExpect(jsonPath("$.error").value("forbidden"));
 
         doThrow(new DuplicateKeyException("duplicate")).when(service).createUser(any());
         mvc.perform(post("/api/v1/users").with(csrf())
                                          .contentType(MediaType.APPLICATION_JSON).content(body))
            .andExpect(status().isConflict())
-           .andExpect(content().string("duplicate"));
+           .andExpect(jsonPath("$.error").value("duplicate"));
 
         doThrow(new IllegalArgumentException("invalid")).when(service).createUser(any());
         mvc.perform(post("/api/v1/users").with(csrf())
                                          .contentType(MediaType.APPLICATION_JSON).content(body))
            .andExpect(status().isBadRequest())
-           .andExpect(content().string("invalid"));
+           .andExpect(jsonPath("$.error").value("invalid"));
 
         doThrow(new NullPointerException()).when(service).createUser(any());
         mvc.perform(post("/api/v1/users").with(csrf())
                                          .contentType(MediaType.APPLICATION_JSON).content(body))
            .andExpect(status().isUnauthorized())
-           .andExpect(content().string("세션이 유효하지 않습니다."));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -158,14 +154,14 @@ class UserControllerTest {
         doThrow(new AccessDeniedException("forbidden")).when(service).deleteUser(3L);
         mvc.perform(delete("/api/v1/users/3").with(csrf()))
            .andExpect(status().isForbidden())
-           .andExpect(content().string("forbidden"));
+           .andExpect(jsonPath("$.error").value("forbidden"));
         doThrow(new UsernameNotFoundException("missing")).when(service).deleteUser(4L);
         mvc.perform(delete("/api/v1/users/4").with(csrf()))
            .andExpect(status().isNotFound());
         doThrow(new NullPointerException()).when(service).deleteUser(5L);
         mvc.perform(delete("/api/v1/users/5").with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(content().string("세션이 유효하지 않습니다."));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -180,23 +176,23 @@ class UserControllerTest {
         mvc.perform(patch("/api/v1/users/3").with(csrf())
                                             .contentType(MediaType.TEXT_PLAIN).content("ADMIN"))
            .andExpect(status().isForbidden())
-           .andExpect(content().string("forbidden"));
+           .andExpect(jsonPath("$.error").value("forbidden"));
         doThrow(new UsernameNotFoundException("missing")).when(service)
                                                          .updateRole(4L, "ADMIN");
         mvc.perform(patch("/api/v1/users/4").with(csrf())
                                             .contentType(MediaType.TEXT_PLAIN).content("ADMIN"))
            .andExpect(status().isNotFound())
-           .andExpect(content().string(""));
+           .andExpect(jsonPath("$.error").value("missing"));
         doThrow(new IllegalArgumentException("invalid")).when(service)
                                                         .updateRole(5L, "BAD");
         mvc.perform(patch("/api/v1/users/5").with(csrf())
                                             .contentType(MediaType.TEXT_PLAIN).content("BAD"))
            .andExpect(status().isBadRequest())
-           .andExpect(content().string("invalid"));
+           .andExpect(jsonPath("$.error").value("invalid"));
         doThrow(new NullPointerException()).when(service).updateRole(6L, "ADMIN");
         mvc.perform(patch("/api/v1/users/6").with(csrf())
                                             .contentType(MediaType.TEXT_PLAIN).content("ADMIN"))
            .andExpect(status().isUnauthorized())
-           .andExpect(content().string("세션이 유효하지 않습니다."));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 }

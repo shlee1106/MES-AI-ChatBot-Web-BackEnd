@@ -2,6 +2,7 @@ package com.mes.mesaichatbot.controller;
 
 import com.mes.mesaichatbot.domain.*;
 import com.mes.mesaichatbot.dto.UserQuestionDto;
+import com.mes.mesaichatbot.handler.GlobalExceptionHandler;
 import com.mes.mesaichatbot.service.LlmChatService;
 import com.mes.mesaichatbot.service.LlmChatSessionService;
 import com.mes.mesaichatbot.service.UserService;
@@ -43,7 +44,8 @@ class ChatControllerTest {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new ChatController(userService, sessionService, chatService)).build();
+        mvc = MockMvcBuilders.standaloneSetup(new ChatController(userService, sessionService, chatService))
+                             .setControllerAdvice(new GlobalExceptionHandler()).build();
         company = new Company(1L, "MES", now);
         member = new UserMember(2L, company, "Kim",
                                 "pw", "k@example.com", UserRole.ROLE_USER, now);
@@ -67,7 +69,7 @@ class ChatControllerTest {
                 .thenThrow(new IllegalArgumentException());
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
-           .andExpect(status().isBadRequest()).andExpect(content().string(""));
+           .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("잘못된 요청입니다."));
         when(userService.getCurrentUserEntity()).thenThrow(new UsernameNotFoundException("missing"));
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
@@ -84,7 +86,7 @@ class ChatControllerTest {
         when(sessionService.createChatSession(eq(member), any(), any())).thenThrow(new IllegalArgumentException());
         mvc.perform(post("/api/v1/chat/sessionrooms").contentType("application/json")
                                                      .content("{\"title\":\"Help\"}"))
-           .andExpect(status().isBadRequest()).andExpect(content().string(""));
+           .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("잘못된 요청입니다."));
     }
 
     @Test

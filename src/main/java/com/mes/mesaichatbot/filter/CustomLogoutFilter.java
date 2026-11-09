@@ -13,11 +13,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.filter.GenericFilterBean;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.Arrays;
 
 /**
  * 프론트엔드에서 로그아웃(POST /api/v1/logout)을 요청했을 때 이를 가로채서 처리하는 전용 필터
@@ -28,7 +26,6 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response,
@@ -65,9 +62,8 @@ public class CustomLogoutFilter extends GenericFilterBean {
          * Redis 서버까지 네트워크 통신이 발생하여 DB에 부하가 발생
          * 고로 RefreshToken이 일치하지 않을 경우 백엔드 서버 CPU 연산만으로 걸러내는 작업 실시*/
         try {
-            Map<String, String> bodyMap = objectMapper.readValue(request.getInputStream(), new TypeReference<>() {
-            });
-            refresh = bodyMap.get("refreshToken");
+            refresh = Arrays.stream(request.getCookies()).filter(cookie -> cookie.getName().equals("refreshToken"))
+                            .findFirst().orElseThrow().getValue();
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -103,10 +99,11 @@ public class CustomLogoutFilter extends GenericFilterBean {
         // 해당 과정을 거쳐야 해커가 훔쳐간 토큰을 나중에 몰래 재발급 시도 원천 차단
         boolean isExist = refreshRepository.existsById(refresh);
         if (isExist) {
+            //[종료] 위 단계 검증이 끝날 시 Redis에 저장된 refreshToken 완전히 삭제 성공
             refreshRepository.deleteById(refresh);
+            response.setStatus(HttpServletResponse.SC_OK);
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         }
-
-        //[종료] 위 단계 검증이 끝날 시 Redis에 저장된 refreshToken 완전히 삭제 성공
-        response.setStatus(HttpServletResponse.SC_OK);
     }
 }

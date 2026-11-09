@@ -190,9 +190,12 @@ public class UserService implements UserDetailsService {
             // 최고 관리자의 경우 모든 사용자 삽입
             users = userRepository.findAll();
         } else {
-            // 중간 관리자의 경우 본인 회사에 속한 사용자만 삽입
+            // 중간 관리자의 경우 본인 회사에 속한 사용자만 삽입 (단, 최고관리자 ROLE_MASTER는 노출 제외)
             Company myCompany = companyRepository.findByCompanyId(currentCompanyId);
-            users = userRepository.findByCompanyId(myCompany);
+            users = userRepository.findByCompanyId(myCompany)
+                                  .stream()
+                                  .filter(u -> u.getRoleCode() != UserRole.ROLE_MASTER)
+                                  .toList();
         }
 
         // DTO로 변환 후 반환

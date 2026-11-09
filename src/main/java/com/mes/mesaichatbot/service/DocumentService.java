@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -139,10 +140,8 @@ public class DocumentService {
     public void deleteFromVectorStore(String fileId) throws IllegalStateException, UnsupportedOperationException {
         VectorStore vectorStore = getVectorStore();
 
-        // 필터링 구문 생성
-        String filterExpression = String.format("fileId == '%s'", fileId);
         // 구문을 MongoDB에 전송
-        vectorStore.delete(filterExpression);
+        vectorStore.delete(new FilterExpressionBuilder().eq("fileId", fileId).build());
         // 로그 기록
         log.info("VectorStore 데이터 삭제 완료: fileId = {}", fileId);
     }

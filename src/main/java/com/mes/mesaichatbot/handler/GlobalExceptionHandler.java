@@ -189,6 +189,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({NullPointerException.class, AuthenticationCredentialsNotFoundException.class})
     public ResponseEntity<Map<String, String>> handleAuthenticationException(Exception e) {
+        log.warn("Null Found: {}", e.getMessage(), e);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "세션이 유효하지 않습니다."));
@@ -197,11 +198,10 @@ public class GlobalExceptionHandler {
     /**
      * 손상되었거나 올바르지 않은 형식의 파일 업로드 시 발생하는 예외 처리 (400 Bad Request)
      *
-     * @param e 발생한 파일 처리 예외 ({@link IOException}, {@link NotOfficeXmlFileException})
      * @return 파일 형식 오류 안내 메시지
      */
     @ExceptionHandler({IOException.class, NotOfficeXmlFileException.class})
-    public ResponseEntity<Map<String, String>> handleInvalidFileException(Exception e) {
+    public ResponseEntity<Map<String, String>> handleInvalidFileException() {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", "파일이 올바르지 않습니다."));

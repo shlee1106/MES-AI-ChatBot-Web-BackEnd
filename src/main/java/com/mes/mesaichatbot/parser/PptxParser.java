@@ -74,7 +74,8 @@ public class PptxParser implements DocumentParser {
                         }
 
                         // 최종 파싱된 표 리스트에 추가
-                        data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(tableList), createdAt));
+                        data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, rowNum++,
+                                                          mapper.writeValueAsString(tableList), createdAt));
                     }
                 }
             }

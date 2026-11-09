@@ -129,7 +129,7 @@ public class FileController {
             return ResponseEntity.badRequest().body(
                     List.of(new FileUploadResponseDto(
                             "파일이 올바르지 않습니다.", null, null)));
-        } catch (UsernameNotFoundException e) {
+        } catch (UsernameNotFoundException | NullPointerException e) {
             // 세션이 유효하지 않으면 401 반환
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                                  .body(List.of(new FileUploadResponseDto(

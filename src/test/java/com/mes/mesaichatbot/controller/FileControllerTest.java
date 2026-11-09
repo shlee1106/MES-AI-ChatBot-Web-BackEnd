@@ -172,8 +172,8 @@ class FileControllerTest {
            .andExpect(jsonPath("$[0].message").value("forbidden"));
         doThrow(new NullPointerException("null")).when(fileService).uploadFile(any(), any(), anyBoolean());
         mvc.perform(multipart("/api/v1/files").file(file).with(csrf()))
-           .andExpect(status().isBadRequest())
-           .andExpect(jsonPath("$[0].message").value("파일이 올바르지 않습니다."));
+           .andExpect(status().isUnauthorized())
+           .andExpect(jsonPath("$[0].message").value("인증 정보가 올바르지 않습니다."));
         doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(), anyBoolean());
         mvc.perform(multipart("/api/v1/files").file(file).with(csrf()))
            .andExpect(status().isUnauthorized())

@@ -15,8 +15,6 @@ import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -154,7 +152,7 @@ public class FileService {
         } else if (shared && !company.getCompanyId().equals(requester.getCompanyId().getCompanyId())) {
             List<UserMember> companyMembers = userMemberRepository.findByCompanyId(company);
             if (!companyMembers.isEmpty()) {
-                owner = companyMembers.get(0);
+                owner = companyMembers.getFirst();
             }
         }
 
@@ -222,28 +220,12 @@ public class FileService {
         UserRole uploaderRole = uploader.getRoleCode();
 
         // 삭제 요청자의 사원번호 추출 및 유저 정보 조회
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new AuthenticationCredentialsNotFoundException("인증 정보가 없습니다.");
-        }
-
-        // 사원번호를 추출
-        String subject = auth.getName();
-        if (subject == null || subject.isBlank()) {
-            throw new IllegalStateException("사용자정보 고유ID 추출실패");
-        }
-
-        Long requesterEmployeeId = Long.parseLong(subject.contains("_") ? subject.split("_")[1] : subject);
-
-        // 추출한 사원번호로 유저 조회
-        UserMember requester = userMemberRepository.findById(requesterEmployeeId)
-                                                   .orElseThrow(() -> new AuthenticationCredentialsNotFoundException(
-                                                           "삭제 요청자 정보를 찾을 수 없습니다."));
+        UserMember requester = userService.getCurrentUserEntity();
         UserRole requesterRole = requester.getRoleCode();
 
         // USER는 본인이 등록한 파일만 삭제 가능
         if (requesterRole == UserRole.ROLE_USER) {
-            if (!requesterEmployeeId.equals(uploaderEmployeeId)) {
+            if (!requester.getEmployeeId().equals(uploaderEmployeeId)) {
                 throw new AccessDeniedException("일반 사원은 본인이 업로드한 파일만 삭제할 수 있습니다.");
             }
         }
@@ -264,6 +246,7 @@ public class FileService {
         } catch (UnsupportedOperationException e) {
             log.warn("LLM 서비스를 이용할 수 없습니다: {}", e.getMessage(), e);
         }
-        log.info("MySQL 파일 메타데이터 삭제 완료: fileId = {}, 요청자 = {}", fileId, requesterEmployeeId);
+        log.info("MySQL 파일 메타데이터 삭제 완료: fileId = {}, 요청자 = {}_{}", fileId, requester.getCompany().getCompanyId(),
+                 requester.getEmployeeId());
     }
 }

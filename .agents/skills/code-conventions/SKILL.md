@@ -1,6 +1,6 @@
 ---
 name: code-conventions
-description: 코드 컨벤션이다. 작성되는 코드는 이 내용을 따라야 한다
+description: 코드 컨벤션이다. 모든 코드를 작성하기 전에 읽는다
 ---
 
 # 코드 컨벤션

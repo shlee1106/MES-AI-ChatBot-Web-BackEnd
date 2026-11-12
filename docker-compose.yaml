@@ -20,28 +20,28 @@ services:
       - "6379:6379"
     networks:
       mes:
-  mongodb:
-    container_name: mongodb
-    image: mongodb/mongodb-atlas-local
-    hostname: mongodb
-    environment:
-      - MONGODB_INITDB_ROOT_USERNAME=testuser
-      - MONGODB_INITDB_ROOT_PASSWORD=secret
-      - MONGODB_INITDB_DATABASE=mes
-    volumes:
-      - mongodb_db:/data/db
-      - mongodb_config:/data/configdb
-      - mongodb_mongot:/data/mongot
-    ports:
-      - "27017:27017"
-    networks:
-      mes:
+#  mongodb:
+#    container_name: mongodb
+#    image: mongodb/mongodb-atlas-local
+#    hostname: mongodb
+#    environment:
+#      - MONGODB_INITDB_ROOT_USERNAME=testuser
+#      - MONGODB_INITDB_ROOT_PASSWORD=secret
+#      - MONGODB_INITDB_DATABASE=mes
+#    volumes:
+#      - mongodb_db:/data/db
+#      - mongodb_config:/data/configdb
+#      - mongodb_mongot:/data/mongot
+#    ports:
+#      - "27017:27017"
+#    networks:
+#      mes:
 
-volumes:
-  mysql_data:
-  mongodb_db:
-  mongodb_config:
-  mongodb_mongot:
+#volumes:
+#  mysql_data:
+#  mongodb_db:
+#  mongodb_config:
+#  mongodb_mongot:
 
 networks:
   mes:

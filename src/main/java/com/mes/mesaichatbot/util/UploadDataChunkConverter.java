@@ -3,9 +3,10 @@ package com.mes.mesaichatbot.util;
 import com.mes.mesaichatbot.dto.ChunkingResponse;
 import com.mes.mesaichatbot.dto.RowReference;
 import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,15 +17,11 @@ import java.util.stream.Collectors;
 /**
  * 업로드된 문서를 변환하기 위한 도구의 모음.
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class UploadDataChunkConverter {
-
     private final ChunkingValidator validator;
-
-    public UploadDataChunkConverter(ChunkingValidator validator) {
-        this.validator = validator;
-    }
+    private final ObjectMapper objectMapper;
 
     /**
      * 각 행의 정보를 청크 데이터와 매핑하여
@@ -86,17 +83,17 @@ public class UploadDataChunkConverter {
 
                            metadata.put(
                                    "rowNumbers",
-                                   chunk.rows()
+                                   objectMapper.writeValueAsString(chunk.rows())
                            );
 
                            metadata.put(
                                    "startRowNumber",
-                                   chunk.rows().getFirst()
+                                   objectMapper.writeValueAsString(chunk.rows().getFirst())
                            );
 
                            metadata.put(
                                    "endRowNumber",
-                                   chunk.rows().getLast()
+                                   objectMapper.writeValueAsString(chunk.rows().getLast())
                            );
 
                            return new Document(

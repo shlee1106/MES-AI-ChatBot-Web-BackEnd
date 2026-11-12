@@ -149,27 +149,33 @@ public class LlmChatService {
         List<String> accessibleDocumentIds =
                 fileMetadataRepository.findAccessibleFileIds(member.getCompany(), member);
 
-        log.debug("User Requested Documents: {}", accessibleDocumentIds);
-        log.debug("Type of Documents: {}",
-                  accessibleDocumentIds.stream().map(value -> value.getClass().toString()).toList());
-
         // 사용자의 질문을 구분자로 감싸기
         String formattedQuestion = USER_QUESTION_TEMPLATE.formatted(userQuestion.message());
 
-        // 문서 RAG 검색 도구 생성
-        // 접근 권한이 있는 문서만 포함
-        RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(
-                VectorStoreDocumentRetriever.builder()
-                                            .similarityThreshold(0.5)
-                                            .vectorStore(vectorStore)
-                                            .filterExpression(
-                                                    new FilterExpressionBuilder()
-                                                            .in("fileId",
-                                                                accessibleDocumentIds.toArray())
-                                                            .build()).build()).build();
-        // LLM 요청 객체 정의 및 요청
-        ChatClient.CallResponseSpec response = chatClient.prompt().advisors(ragAdvisor).messages(messages)
-                                                         .user(formattedQuestion).call();
+        // LLM 요청 객체 정의
+        ChatClient.ChatClientRequestSpec requestSpec = chatClient.prompt();
+
+        // 접근 가능한 문서가 없으면 RAG 검색을 하지 않음
+        // 빈 목록으로 검색하면 필터 쿼리가 잘못되어 OpenSearch 검색이 실패함
+        if (accessibleDocumentIds.isEmpty()) {
+            log.debug("접근 가능한 문서가 없어 RAG 검색을 생략합니다.");
+        } else {
+            // 문서 RAG 검색 도구 생성
+            // 접근 권한이 있는 문서만 포함
+            RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(
+                    VectorStoreDocumentRetriever.builder()
+                                                .similarityThreshold(0.5)
+                                                .vectorStore(vectorStore)
+                                                .filterExpression(
+                                                        new FilterExpressionBuilder()
+                                                                .in("fileId",
+                                                                    accessibleDocumentIds.toArray())
+                                                                .build()).build()).build();
+            requestSpec = requestSpec.advisors(ragAdvisor);
+        }
+
+        // LLM 요청
+        ChatClient.CallResponseSpec response = requestSpec.messages(messages).user(formattedQuestion).call();
 
         // LLM의 답변 임시 저장
         String llmAnswer = response.content();

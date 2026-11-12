@@ -1,5 +1,7 @@
 package com.mes.mesaichatbot.dto;
 
+import org.jspecify.annotations.NonNull;
+
 /**
  * 하나의 블록 단위입니다.
  * dataId와 rowNumber로 문서의 영역을 식별합니다.
@@ -9,4 +11,8 @@ package com.mes.mesaichatbot.dto;
  */
 public record RowReference(int dataId,
                            int rowNumber) {
+    @Override
+    public @NonNull String toString() {
+        return dataId + ":" + rowNumber;
+    }
 }

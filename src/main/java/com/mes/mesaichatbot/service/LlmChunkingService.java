@@ -3,6 +3,7 @@ package com.mes.mesaichatbot.service;
 import com.mes.mesaichatbot.dto.*;
 import com.mes.mesaichatbot.util.UploadDataChunkConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.ObjectProvider;
@@ -11,6 +12,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LlmChunkingService {
@@ -309,6 +311,7 @@ public class LlmChunkingService {
                                                                  objectMapper.writeValueAsString(data.rows()))).call();
         // 답변 임시 저장.
         String responseContent = response.content();
+        log.debug(responseContent);
         // LLM이 답변을 반환하지 않았을 경우의 예외
         if (responseContent == null || responseContent.isBlank()) {
             throw new IllegalStateException("LLM이 답변을 반환하지 않았습니다.");

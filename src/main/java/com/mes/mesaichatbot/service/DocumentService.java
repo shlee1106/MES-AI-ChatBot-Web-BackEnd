@@ -113,9 +113,9 @@ public class DocumentService {
                 Map<String, Object> metadata = Map.of(
                         "companyId", value.companyId(),
                         "fileId", value.fileId(),
-                        "rowNumbers", value.rowNumber(),
-                        "startRowNumber", 0,
-                        "endRowNumber", uploadDataDetailsDto.size()
+                        "rowNumbers", String.valueOf(value.rowNumber()),
+                        "startRowNumber", "0",
+                        "endRowNumber", String.valueOf(uploadDataDetailsDto.size())
                 );
                 data.add(new Document(
                         String.format("doc-%s-%s", value.fileId(), "chunk-%03d".formatted(i + 1)),

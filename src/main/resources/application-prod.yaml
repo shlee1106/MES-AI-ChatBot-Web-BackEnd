@@ -2,14 +2,3 @@ spring:
   ai:
     model:
       embedding: none
-      chat: none
-      audio:
-        speech: none
-        transcription: none
-      image: none
-      moderation: none
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration
-      - org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration
-      - org.springframework.ai.vectorstore.mongodb.autoconfigure.MongoDBAtlasVectorStoreAutoConfiguration

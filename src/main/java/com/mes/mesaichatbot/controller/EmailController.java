@@ -3,6 +3,7 @@ package com.mes.mesaichatbot.controller;
 import com.mes.mesaichatbot.dto.PasswordResetRequestDTO;
 import com.mes.mesaichatbot.dto.PasswordUpdateRequestDTO;
 import com.mes.mesaichatbot.service.PasswordResetService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -67,7 +68,7 @@ public class EmailController {
      * @return {@link ResponseEntity<String>} 비밀번호 재설정 결과.
      */
     @PostMapping(path = "/update", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<String> updatePassword(@RequestBody PasswordUpdateRequestDTO dto) {
+    public ResponseEntity<String> updatePassword(@RequestBody @Valid PasswordUpdateRequestDTO dto) {
         // 제공된 토큰이 없거나, 새 비밀번호가 없으면 400
         if (dto.token() == null) {
             return ResponseEntity.badRequest().body("토큰이 만료되었거나 존재하지 않습니다.");

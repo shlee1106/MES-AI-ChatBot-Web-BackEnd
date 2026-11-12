@@ -4,6 +4,39 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${LLM_API_KEY}
+      base-url: ${LLM_API_URL}
+      chat:
+        model: ${LLM_MODEL:gpt-5.6-luna}
+    vectorstore:
+      opensearch:
+        uris: https://${OPENSEARCH_HOST}
+        index-name: vector_store
+        initialize-schema: true
+        similarity: cosinesimil
+        use-approximate-knn: true
+        # NextGen 컬렉션은 engine/method 지정이 불가해 기본 매핑(lucene 고정) 대신 직접 지정
+        mapping-json: |
+          {
+            "properties": {
+              "embedding": {
+                "type": "knn_vector",
+                "dimension": %d,
+                "space_type": "cosinesimil"
+              }
+            }
+          }
+        dimensions: ${EMBEDDING_DIMENSIONS:768}
+        aws:
+          region: ${AWS_REGION:ap-northeast-2}
+          host: ${OPENSEARCH_HOST}
+          access-key: ${AWS_ACCESS_KEY_ID}
+          secret-key: ${AWS_SECRET_ACCESS_KEY}
+          service-name: ${OPENSEARCH_SERVICE_NAME:aoss}
   web:
     resources:
       add-mappings: false

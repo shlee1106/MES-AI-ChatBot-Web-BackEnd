@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -68,9 +69,9 @@ class EmailControllerTest {
     @Test
     @DisplayName("비밀번호 변경 시 결과 혹은 오류를 반환하는가?")
     void updatesPasswordAndRejectsMissingFields() throws Exception {
-        String valid = mapper.writeValueAsString(new PasswordUpdateRequestDTO("token", "secret"));
+        String valid = mapper.writeValueAsString(new PasswordUpdateRequestDTO("token", "secret1234!"));
 
-        String invalidToken = mapper.writeValueAsString(new PasswordUpdateRequestDTO(null, "abc"));
+        String invalidToken = mapper.writeValueAsString(new PasswordUpdateRequestDTO(null, "secret1234!"));
         String invalidPassword = mapper.writeValueAsString(new PasswordUpdateRequestDTO("x", " "));
         mvc.perform(post("/api/v1/password/update")
                             .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(valid))
@@ -79,17 +80,17 @@ class EmailControllerTest {
         mvc.perform(post("/api/v1/password/update")
                             .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidToken))
            .andExpect(status().isBadRequest())
-           .andExpect(content().string("토큰이 만료되었거나 존재하지 않습니다."));
+           .andExpect(content().string("토큰은 필수입니다."));
         mvc.perform(post("/api/v1/password/update")
                             .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(invalidPassword))
            .andExpect(status().isBadRequest())
-           .andExpect(content().string("비밀번호가 설정되지 않았습니다."));
+           .andExpect(content().string(containsString("새 비밀번호는 필수입니다.")));
         doThrow(new IllegalArgumentException("expired"))
-                .when(service).updatePassword("bad", "secret");
+                .when(service).updatePassword("bad", "secret1234!");
         mvc.perform(post("/api/v1/password/update")
                             .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(
                            mapper.writeValueAsString(
-                                   new PasswordUpdateRequestDTO("bad", "secret"))))
+                                   new PasswordUpdateRequestDTO("bad", "secret1234!"))))
            .andExpect(status().isBadRequest())
            .andExpect(content().string("expired"));
     }

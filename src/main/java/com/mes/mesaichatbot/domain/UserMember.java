@@ -42,6 +42,8 @@ public class UserMember implements UserDetails {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted;
     /**
      * 사원번호(Long)와 회사 엔티티로 바로 생성할 수 있는 호환 생성자.
      * 내부적으로 {@link UserMemberId} 복합키 객체를 생성하여 매핑합니다.
@@ -55,6 +57,7 @@ public class UserMember implements UserDetails {
         this.companyEmail = companyEmail;
         this.roleCode = roleCode;
         this.createdAt = createdAt;
+        this.deleted = false;
     }
 
     // 객체(복합키)에 들어간 컬럼 오류방지용 설정자

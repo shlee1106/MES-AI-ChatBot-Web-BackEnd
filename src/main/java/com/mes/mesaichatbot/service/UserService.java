@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Member;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -77,7 +78,7 @@ public class UserService implements UserDetailsService {
 
         // 엔티티 저장 (UserMember 필드 순서: id, company, username, password, companyEmail, roleCode, createdAt)
         UserMember entity = new UserMember(
-                userMemberId, company, dto.username(),
+                userMemberId.getEmployeeId(), company, dto.username(),
                 passwordEncoder.encode(dto.password()), dto.email(),
                 dto.role(), LocalDateTime.now());
 
@@ -213,32 +214,27 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(
             Long targetEmployeeId) throws AccessDeniedException, UsernameNotFoundException, NullPointerException {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String[] parts = Objects.requireNonNull(auth).getName().split("_");
-        String currentUserRole = auth.getAuthorities().iterator().next().getAuthority();
-        Long currentCompanyId = Long.parseLong(parts[0]);
-        Long currentEmployeeId = Long.parseLong(parts[1]);
-
+        UserMember currentUser = getCurrentUserEntity();
         UserMember targetUser = userRepository.findById(targetEmployeeId)
                                               .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
-        if ("ROLE_USER".equals(currentUserRole)) {
+        if ("ROLE_USER".equals(currentUser.getRoleCode().toString())) {
             throw new AccessDeniedException("하위관리자는 탈퇴 권한이 없습니다.");
         }
 
-        if ("ROLE_MANAGER".equals(currentUserRole)) {
-            if (!currentCompanyId.equals(targetUser.getCompanyId().getCompanyId())) {
+        if ("ROLE_MANAGER".equals(currentUser.getRoleCode().toString())) {
+            if (!currentUser.getCompanyId().getCompanyId().equals(targetUser.getCompanyId().getCompanyId())) {
                 throw new AccessDeniedException("타 회사회원은 탈퇴시킬 수 없습니다.");
             }
 
-            boolean isSelf = currentEmployeeId.equals(targetEmployeeId);
+            boolean isSelf = currentUser.getEmployeeId().equals(targetEmployeeId);
             boolean isTargetUserRole = targetUser.getRoleCode() == UserRole.ROLE_USER;
 
             if (!isSelf && !isTargetUserRole) {
                 throw new AccessDeniedException("중간관리자는 본인 또는 하위관리자만 탈퇴 시킬 수 있습니다.");
             }
         }
-        userRepository.delete(targetUser);
+        targetUser.setDeleted(true);
     }
 
     /**
@@ -253,7 +249,8 @@ public class UserService implements UserDetailsService {
      */
     @Transactional
     public void updateRole(Long targetEmployeeId,
-                           String newRoleCode) throws AccessDeniedException, IllegalArgumentException, UsernameNotFoundException, NullPointerException {
+                           String newRoleCode) throws AccessDeniedException, IllegalArgumentException,
+            UsernameNotFoundException, NullPointerException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
 

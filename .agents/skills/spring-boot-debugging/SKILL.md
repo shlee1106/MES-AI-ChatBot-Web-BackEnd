@@ -1,6 +1,8 @@
 ---
 name: spring-boot-debugging
-description: Spring Boot 애플리케이션의 실행 오류와 HTTP 동작을 재현하고 디버그 콘솔 및 curl 응답을 분석할 때 사용한다.
+description: >
+  Spring Boot 애플리케이션의 실행 오류와 HTTP 동작을 재현하고 디버그 콘솔 및 curl 응답을 분석할 때 사용한다.
+  사용자가 /spring-boot-debugging을 입력하면 사용한다.
 ---
 
 # Spring Boot 디버깅

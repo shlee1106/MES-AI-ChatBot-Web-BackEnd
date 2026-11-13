@@ -27,8 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -120,23 +118,19 @@ public class LlmChatService {
         ChatClient chatClient = getChatClient();
         VectorStore vectorStore = getVectorStore();
 
-
-        // URL 파라미터의 UUID 파싱 시도
-        UUID sessionUuid = UUID.fromString(sessionId);
-
         // DB에서 대화 세션 조회 및 본인 소유 세션인지 권한 검증 (타인 세션이면 403 반환)
-        ChatSession session = chatSessionRepository.findBySessionId(sessionId);
-        if (session != null && (!Objects.equals(session.getEmployeeId().getEmployeeId(),
-                                                member.getEmployeeId()) || !Objects.equals(
-                session.getCompanyId().getCompanyId(), member.getCompanyId().getCompanyId()))) {
+        ChatSession session = chatSessionRepository.findBySessionId(sessionId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!session.getEmployeeId().equals(member)) {
             throw new AccessDeniedException("본인의 대화방에만 질문할 수 있습니다.");
         }
 
-        // UUID로 메시지 목록 불러오기
-        List<Message> messages = chatHistoryService.getChatHistories().get(sessionUuid);
+        // 세션 ID로 대화방 조회
+        List<Message> messages = chatHistoryService.getMessages(session, member);
 
-        // UUID로 목록을 찾을 수 없는 경우 Not Found
-        if (messages == null) {
+        // 대화방을 찾을 수 없는 경우 Not Found
+        if (messages == null || messages.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 

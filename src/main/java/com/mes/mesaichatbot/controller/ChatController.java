@@ -1,8 +1,10 @@
 package com.mes.mesaichatbot.controller;
 
+import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
 import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.dto.*;
+import com.mes.mesaichatbot.service.LlmChatHistoryService;
 import com.mes.mesaichatbot.service.LlmChatService;
 import com.mes.mesaichatbot.service.LlmChatSessionService;
 import com.mes.mesaichatbot.service.UserService;
@@ -31,6 +33,7 @@ public class ChatController {
     private final UserService userService;
     private final LlmChatSessionService llmChatSessionService;
     private final LlmChatService llmChatService;
+    private final LlmChatHistoryService llmChatHistoryService;
 
     /**
      * 사용자에게 질문을 받아 답변을 생성합니다.
@@ -103,7 +106,8 @@ public class ChatController {
             @PathVariable(name = "sessionId") String sessionId) {
         try {
             UserMember member = userService.getCurrentUserEntity();
-            var histories = llmChatSessionService.getChatHistories(sessionId, member);
+            ChatSession session = llmChatSessionService.getChatSession(sessionId, member);
+            List<ChatHistory> histories = llmChatHistoryService.getChatHistories(session, member);
             // 각 Message로부터 DTO 매핑 후 반환
             return ResponseEntity.ok(ChatHistoryResponseDto.from(histories));
         } catch (IllegalArgumentException e) {

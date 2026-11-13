@@ -22,7 +22,8 @@ spring:
       embedding:
         api-key: ${EMBEDDING_API_KEY}
         base-url: ${EMBEDDING_API_URL:https://openrouter.ai/api/v1}
-        model: ${EMBEDDING_MODEL}
+        model: ${EMBEDDING_MODEL:openai/text-embedding-3-small}
+        dimensions: ${EMBEDDING_DIMENSIONS:768}
     vectorstore:
       opensearch:
         uris: https://${OPENSEARCH_HOST}

@@ -67,8 +67,8 @@ public class UserMember implements UserDetails {
         return this.id != null ? this.id.getEmployeeId() : null;
     }
 
-    public Company getCompanyId() {
-        return this.company;
+    public Long getCompanyId() {
+        return this.company.getCompanyId();
     }
 
     @Override

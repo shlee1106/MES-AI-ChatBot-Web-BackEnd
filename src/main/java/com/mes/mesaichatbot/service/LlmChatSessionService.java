@@ -50,11 +50,10 @@ public class LlmChatSessionService {
      *
      * @param member 사용자 정보
      * @return 대화방 목록
-     * @throws NullPointerException      사용자 정보가 null인 경우
      * @throws UsernameNotFoundException 사용자 정보가 존재하지 않는 경우
      */
     @Transactional(readOnly = true)
-    public List<ChatSession> getChatSessions(UserMember member) throws NullPointerException, UsernameNotFoundException {
+    public List<ChatSession> getChatSessions(UserMember member) throws UsernameNotFoundException {
         return chatSessionRepository.findAllByEmployeeId(member);
     }
 

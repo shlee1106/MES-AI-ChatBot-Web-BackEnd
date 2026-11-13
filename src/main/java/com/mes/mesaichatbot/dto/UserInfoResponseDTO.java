@@ -22,9 +22,9 @@ public record UserInfoResponseDTO(
      */
     public static UserInfoResponseDTO from(UserMember member) {
         return new UserInfoResponseDTO(
-                member.getCompanyId().getCompanyId(), member.getEmployeeId(),
+                member.getCompanyId(), member.getEmployeeId(),
                 member.getUsername(), member.getCompanyEmail(), member.getRoleCode(),
-                member.getCompanyId().getCompanyName(),
+                member.getCompany().getCompanyName(),
                 member.getCreatedAt());
     }
 

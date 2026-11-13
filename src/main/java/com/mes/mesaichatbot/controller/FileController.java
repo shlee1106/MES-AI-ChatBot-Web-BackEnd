@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,17 +47,12 @@ public class FileController {
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false, defaultValue = "false") boolean allCompany,
             @RequestParam(required = false) Long companyId) {
-        try {
-            var currentUser = userService.getCurrentUserEntity();
-            if (shared == null && employeeId == null && !allCompany && companyId == null) {
-                return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(currentUser)));
-            }
-            return ResponseEntity.ok(FileResponseDto.from(
-                    fileService.getFilesForQuery(currentUser, shared, employeeId, allCompany, companyId)));
-        } catch (UsernameNotFoundException | NullPointerException e) {
-            // 세션이 유효하지 않으면 401 반환
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        var currentUser = userService.getCurrentUserEntity();
+        if (shared == null && employeeId == null && !allCompany && companyId == null) {
+            return ResponseEntity.ok(FileResponseDto.from(fileService.getFiles(currentUser)));
         }
+        return ResponseEntity.ok(FileResponseDto.from(
+                fileService.getFilesForQuery(currentUser, shared, employeeId, allCompany, companyId)));
     }
 
     /**
@@ -129,11 +123,6 @@ public class FileController {
             return ResponseEntity.badRequest().body(
                     List.of(new FileUploadResponseDto(
                             "파일이 올바르지 않습니다.", null, null)));
-        } catch (UsernameNotFoundException | NullPointerException e) {
-            // 세션이 유효하지 않으면 401 반환
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                 .body(List.of(new FileUploadResponseDto(
-                                         "인증 정보가 올바르지 않습니다.", null, null)));
         }
     }
 

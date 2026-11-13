@@ -40,7 +40,7 @@ public class PasswordResetService {
 
         // UUID 토큰 생성 및 Redis에 저장 (5분 뒤 자동 삭제됨)
         String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId().getCompanyId(),
+        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId(),
                                                                user.getEmployeeId());
         tokenRepository.save(resetToken);
 

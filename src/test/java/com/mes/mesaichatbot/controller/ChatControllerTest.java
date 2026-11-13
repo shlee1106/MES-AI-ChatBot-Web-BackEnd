@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
@@ -74,10 +74,10 @@ class ChatControllerTest {
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("잘못된 요청입니다."));
-        when(userService.getCurrentUserEntity()).thenThrow(new UsernameNotFoundException("missing"));
+        when(userService.getCurrentUserEntity()).thenThrow(new BadCredentialsException("missing"));
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
-           .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+           .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test

@@ -26,4 +26,17 @@ public class Company {
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime createdAt;
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Company other)) {
+            return false;
+        }
+        return other.getCompanyId().equals(this.getCompanyId());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getCompanyId().hashCode();
+    }
 }

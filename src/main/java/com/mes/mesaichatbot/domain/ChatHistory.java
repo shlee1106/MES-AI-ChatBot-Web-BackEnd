@@ -55,6 +55,6 @@ public class ChatHistory implements Persistable<String> {
     }
 
     public Company getCompanyId() {
-        return this.employeeId.getCompanyId();
+        return this.employeeId.getCompany();
     }
 }

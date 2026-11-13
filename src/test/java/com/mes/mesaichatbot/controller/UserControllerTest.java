@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -58,11 +60,11 @@ class UserControllerTest {
         mvc.perform(get("/api/v1/users").with(csrf()))
            .andExpect(status().isOk())
            .andExpect(jsonPath("$[0].username").value("Kim"));
-        when(service.getMyInfo()).thenThrow(new UsernameNotFoundException("missing"));
+        when(service.getMyInfo()).thenThrow(new BadCredentialsException("missing"));
         mvc.perform(get("/api/v1/users/me").with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(content().string(""));
-        when(service.getUserForAdmin()).thenThrow(new NullPointerException());
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
+        when(service.getUserForAdmin()).thenThrow(new AuthenticationCredentialsNotFoundException(""));
         mvc.perform(get("/api/v1/users").with(csrf()))
            .andExpect(status().isUnauthorized())
            .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
@@ -111,7 +113,7 @@ class UserControllerTest {
            .andExpect(status().isBadRequest())
            .andExpect(jsonPath("$.error").value("invalid"));
 
-        doThrow(new NullPointerException()).when(service).createUser(any());
+        doThrow(new AuthenticationCredentialsNotFoundException("")).when(service).createUser(any());
         mvc.perform(post("/api/v1/users").with(csrf())
                                          .contentType(MediaType.APPLICATION_JSON).content(body))
            .andExpect(status().isUnauthorized())
@@ -158,7 +160,7 @@ class UserControllerTest {
         doThrow(new UsernameNotFoundException("missing")).when(service).deleteUser(4L);
         mvc.perform(delete("/api/v1/users/4").with(csrf()))
            .andExpect(status().isNotFound());
-        doThrow(new NullPointerException()).when(service).deleteUser(5L);
+        doThrow(new AuthenticationCredentialsNotFoundException("")).when(service).deleteUser(5L);
         mvc.perform(delete("/api/v1/users/5").with(csrf()))
            .andExpect(status().isUnauthorized())
            .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
@@ -189,7 +191,7 @@ class UserControllerTest {
                                             .contentType(MediaType.TEXT_PLAIN).content("BAD"))
            .andExpect(status().isBadRequest())
            .andExpect(jsonPath("$.error").value("invalid"));
-        doThrow(new NullPointerException()).when(service).updateRole(6L, "ADMIN");
+        doThrow(new AuthenticationCredentialsNotFoundException("")).when(service).updateRole(6L, "ADMIN");
         mvc.perform(patch("/api/v1/users/6").with(csrf())
                                             .contentType(MediaType.TEXT_PLAIN).content("ADMIN"))
            .andExpect(status().isUnauthorized())

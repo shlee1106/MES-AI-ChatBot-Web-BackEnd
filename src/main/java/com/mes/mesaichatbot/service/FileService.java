@@ -70,7 +70,7 @@ public class FileService {
                                                Long employeeId,
                                                boolean allCompany,
                                                Long requestedCompanyId) {
-        Company company = currentUser.getCompanyId();
+        Company company = currentUser.getCompany();
         boolean isAdmin = currentUser.getRoleCode() != UserRole.ROLE_USER;
 
         if (currentUser.getRoleCode() == UserRole.ROLE_MASTER && requestedCompanyId != null) {
@@ -102,7 +102,7 @@ public class FileService {
      */
     @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, Boolean shared)
-            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
+            throws IOException, NotOfficeXmlFileException, UsernameNotFoundException, UnsupportedOperationException {
         return uploadFile(file, requestedAt, Boolean.TRUE.equals(shared), null, null);
     }
 
@@ -122,12 +122,12 @@ public class FileService {
                                             boolean shared,
                                             Long targetEmployeeId,
                                             Long targetCompanyId)
-            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
+            throws IOException, NotOfficeXmlFileException, UsernameNotFoundException, UnsupportedOperationException {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
         // 요청자 정보를 UserService에서 가져옴
         UserMember requester = userService.getCurrentUserEntity();
-        Company company = requester.getCompanyId();
+        Company company = requester.getCompany();
 
         if (requester.getRoleCode() == UserRole.ROLE_MASTER && targetCompanyId != null) {
             Company foundCompany = companyRepository.findByCompanyId(targetCompanyId);
@@ -149,7 +149,7 @@ public class FileService {
             }
             owner = userMemberRepository.findByCompanyIdAndEmployeeId(company, targetEmployeeId)
                                         .orElseThrow(() -> new UsernameNotFoundException("대상 사원 정보를 찾을 수 없습니다."));
-        } else if (shared && !company.getCompanyId().equals(requester.getCompanyId().getCompanyId())) {
+        } else if (shared && !company.equals(requester.getCompany())) {
             List<UserMember> companyMembers = userMemberRepository.findByCompanyId(company);
             if (!companyMembers.isEmpty()) {
                 owner = companyMembers.getFirst();

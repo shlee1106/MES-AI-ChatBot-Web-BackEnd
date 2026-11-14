@@ -35,7 +35,7 @@ public class ChatHistory implements Persistable<String> {
     @JoinColumn(name = "session_id", nullable = false)
     private ChatSession sessionId;
 
-    @Column(nullable = false, length = 1024)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
     @Column(nullable = false)
@@ -55,6 +55,6 @@ public class ChatHistory implements Persistable<String> {
     }
 
     public Company getCompanyId() {
-        return this.employeeId.getCompanyId();
+        return this.employeeId.getCompany();
     }
 }

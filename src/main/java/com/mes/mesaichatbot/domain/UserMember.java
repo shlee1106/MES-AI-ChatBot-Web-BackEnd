@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "user_member")
@@ -44,6 +45,7 @@ public class UserMember implements UserDetails {
 
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
+
     /**
      * 사원번호(Long)와 회사 엔티티로 바로 생성할 수 있는 호환 생성자.
      * 내부적으로 {@link UserMemberId} 복합키 객체를 생성하여 매핑합니다.
@@ -65,12 +67,32 @@ public class UserMember implements UserDetails {
         return this.id != null ? this.id.getEmployeeId() : null;
     }
 
-    public Company getCompanyId() {
-        return this.company;
+    public Long getCompanyId() {
+        return this.company.getCompanyId();
     }
 
     @Override
     public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.roleCode.toString()));
+    }
+
+    /**
+     * 해당 UserMember 객체를 다른 객체와 비교합니다.
+     *
+     * @param obj 비교 대상 객체
+     * @return 같으면 true, 다르거나 UserMember가 아니면 false
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof UserMember other) {
+            return this.id.equals(other.getId());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.id);
     }
 }

@@ -2,83 +2,94 @@ package com.mes.mesaichatbot.service;
 
 import com.mes.mesaichatbot.domain.ChatHistory;
 import com.mes.mesaichatbot.domain.ChatSession;
+import com.mes.mesaichatbot.domain.UserMember;
 import com.mes.mesaichatbot.repository.ChatHistoryRepository;
-import com.mes.mesaichatbot.repository.ChatSessionRepository;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 대화 내역을 관리합니다.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LlmChatHistoryService {
-
-    /**
-     * 대화 내역을 UUID로 구분하여 저장하는 변수
-     */
-    @Getter
-    private final HashMap<UUID, ArrayList<Message>> chatHistories = new HashMap<>();
     //인터페이스 메소드 사용을 위한 객체생성
     private final ChatHistoryRepository chatHistoryRepository;
-    private final ChatSessionRepository chatSessionRepository;
 
-    /*
-    서버 시작 시 자동 실행되는 메서드
-    DB에서 대화 내역들을 꺼내서 chatHistories 맵에 할당
+    /**
+     * 세션의 모든 대화 기록(LLM용)을 가져옵니다.
+     *
+     * @param member  사용자.
+     * @param session 세션.
+     * @return {@link Message} 리스트.
+     * @throws AccessDeniedException 타인의 대화 기록에는 접근할 수 없습니다!
      */
-    @EventListener(ApplicationReadyEvent.class)
-    public void init() {
-        // DB에서 대화 내역을 전부 꺼냄
-        Iterable<ChatHistory> rows = chatHistoryRepository.findAll();
-        Iterable<ChatSession> sessionRows = chatSessionRepository.findAll();
-
-        for (ChatSession chatId : sessionRows) {
-            // 해당 대화방이 미존재한다면
-            if (!chatHistories.containsKey(UUID.fromString(chatId.getSessionId()))) {
-                // 새로 리스트 만들어서 삽입
-                chatHistories.put(UUID.fromString(chatId.getSessionId()), new ArrayList<>());
-            }
+    @Transactional(readOnly = true)
+    public List<Message> getMessages(ChatSession session, UserMember member)
+            throws AccessDeniedException {
+        if (!session.getEmployeeId().equals(member)) {
+            throw new AccessDeniedException("타인의 대화 기록에는 접근할 수 없습니다!");
         }
 
-        // 각 행 순회
-        for (ChatHistory chatHistory : rows) {
-            // 각 행의 대화방 ID UUID로 파싱
-            UUID chatId = UUID.fromString(chatHistory.getSessionId().getSessionId());
-            // 메시지를 담을 공간 생성
-            Message message;
+        // 세션의 모든 대화 기록을 가져옴
+        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(session);
 
-            // 대화 주체가 사용자면
-            if (chatHistory.getRole().equals("user")) {
-                // UserMessage 형태로 생성 후 대입
-                message = UserMessage.builder().text(chatHistory.getMessage()).build();
-            } else {
-                // 아니면 AssistantMessage 형태로 생성 후 대입
-                message = AssistantMessage.builder().content(chatHistory.getMessage()).build();
-            }
-            // 해당 대화방이 전에 삽입되었다면
-            if (chatHistories.containsKey(chatId)) {
-                // 해당 대화방에 삽입
-                chatHistories.get(chatId).add(message);
-            } else {
-                // 아니면 새로 리스트 만들어서 삽입
-                ArrayList<Message> list = new ArrayList<>();
-                list.add(message);
-                chatHistories.put(chatId, list);
-            }
+        // 각 대화 기록을 Message 객체로 변환
+        return histories.stream()
+                        .map(history -> {
+                            // 해당 대화 기록의 사용자 ID가 현재 로그인한 사용자와 일치하지 않으면 접근 거부
+                            if (!history.getEmployeeId().equals(member)) {
+                                throw new AccessDeniedException("타인의 대화 기록에는 접근할 수 없습니다!");
+                            }
 
+                            if (history.getRole().equals("user")) {
+                                return UserMessage.builder().text(history.getMessage()).build();
+                            } else {
+                                return AssistantMessage.builder().content(history.getMessage()).build();
+                            }
+                        })
+                        .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 대화방의 대화 내역(레코드)을 조회합니다.
+     *
+     * @param session 조회할 대화 세션
+     * @param member  현재 로그인한 사용자 엔티티
+     * @return 시간순으로 정렬된 {@link ChatHistory} 리스트
+     * @throws IllegalArgumentException 존재하지 않는 세션 ID일 경우 발생 (404)
+     * @throws AccessDeniedException    본인 소유의 대화방이 아닐 경우 발생 (403)
+     */
+    @Transactional(readOnly = true)
+    public List<ChatHistory> getChatHistories(ChatSession session, UserMember member)
+            throws IllegalArgumentException, AccessDeniedException {
+        // 세션 존재 여부 먼저 확인 (존재하지 않으면 404 처리를 위해 예외 발생)
+        if (session == null) {
+            throw new IllegalArgumentException("세션을 찾을 수 없습니다.");
         }
+
+        // 대화 내역이 0건인 빈 방이라도 타인의 방이면 조회할 수 없도록 세션 소유자(회사번호·사원번호) 검증
+        if (!session.getEmployeeId().equals(member)) {
+            throw new AccessDeniedException("본인의 대화방만 조회할 수 있습니다.");
+        }
+
+        // 해당 세션의 대화 내역을 시간 오름차순으로 조회
+        List<ChatHistory> histories = chatHistoryRepository.findAllBySessionIdOrderByRecordedAtAsc(session);
+
+        // 대화 내역 중 타인의 내역이 포함된 경우 이중 검증 (403 반환)
+        if (histories.stream().anyMatch(
+                chatHistory -> !chatHistory.getEmployeeId().equals(member))) {
+            throw new AccessDeniedException("본인의 대화방만 조회할 수 있습니다.");
+        }
+
+        return histories;
     }
 }

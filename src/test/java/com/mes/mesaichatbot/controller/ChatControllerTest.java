@@ -3,6 +3,7 @@ package com.mes.mesaichatbot.controller;
 import com.mes.mesaichatbot.domain.*;
 import com.mes.mesaichatbot.dto.UserQuestionDto;
 import com.mes.mesaichatbot.handler.GlobalExceptionHandler;
+import com.mes.mesaichatbot.service.LlmChatHistoryService;
 import com.mes.mesaichatbot.service.LlmChatService;
 import com.mes.mesaichatbot.service.LlmChatSessionService;
 import com.mes.mesaichatbot.service.UserService;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
@@ -34,6 +35,8 @@ class ChatControllerTest {
     @Mock
     LlmChatSessionService sessionService;
     @Mock
+    LlmChatHistoryService llmChatHistoryService;
+    @Mock
     LlmChatService chatService;
     MockMvc mvc;
     ObjectMapper mapper = new ObjectMapper();
@@ -44,7 +47,8 @@ class ChatControllerTest {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new ChatController(userService, sessionService, chatService))
+        mvc = MockMvcBuilders.standaloneSetup(
+                                     new ChatController(userService, sessionService, chatService, llmChatHistoryService))
                              .setControllerAdvice(new GlobalExceptionHandler()).build();
         company = new Company(1L, "MES", now);
         member = new UserMember(2L, company, "Kim",
@@ -70,10 +74,10 @@ class ChatControllerTest {
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("잘못된 요청입니다."));
-        when(userService.getCurrentUserEntity()).thenThrow(new UsernameNotFoundException("missing"));
+        when(userService.getCurrentUserEntity()).thenThrow(new BadCredentialsException("missing"));
         mvc.perform(post("/api/v1/chat/sessions/session-1/ask")
                             .contentType("application/json").content(body))
-           .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+           .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -92,12 +96,13 @@ class ChatControllerTest {
     @Test
     @DisplayName("대화 기록 접근 시 결과 혹은 오류를 반환하는가?")
     void readsAndDeletesHistoryAndSessions() throws Exception {
-        when(sessionService.getChatHistories("session-1", member)).thenReturn(
+        when(sessionService.getChatSession("session-1", member)).thenReturn(session);
+        when(llmChatHistoryService.getChatHistories(session, member)).thenReturn(
                 List.of(new ChatHistory("chat-1", member,
                                         session, "hello", now, "user")));
         mvc.perform(get("/api/v1/chat/sessions/session-1/histories")).andExpect(status().isOk())
            .andExpect(jsonPath("$[0].message").value("hello"));
-        when(sessionService.getChatHistories("denied", member))
+        when(sessionService.getChatSession("denied", member))
                 .thenThrow(new AccessDeniedException("denied"));
         mvc.perform(get("/api/v1/chat/sessions/denied/histories")).andExpect(status().isForbidden())
            .andExpect(content().string(""));

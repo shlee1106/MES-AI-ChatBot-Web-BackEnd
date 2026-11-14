@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,12 +28,8 @@ public class UserController {
      */
     @GetMapping("/me")
     public ResponseEntity<UserInfoResponseDTO> getMyInfo() {
-        try {
-            // 내 정보 조회.
-            return ResponseEntity.ok(userService.getMyInfo());
-        } catch (NullPointerException | UsernameNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        // 내 정보 조회.
+        return ResponseEntity.ok(userService.getMyInfo());
     }
 
     /**
@@ -46,7 +41,7 @@ public class UserController {
     public ResponseEntity<List<UserInfoResponseDTO>> getUserForAdmin() {
         // GlobalExceptionHandler파일안에 예외처리 권한 넘김
         // AccessDeniedException: 조회 권한이 없는 일반 사원인 경우 403 Forbidden 반환
-        // NullPointerException: 인증 세션이 유효하지 않은 경우 401 Unauthorized 반환
+        // AuthenticationCredentialsNotFoundException: 인증 세션이 유효하지 않은 경우 401 Unauthorized 반환
         return ResponseEntity.ok(userService.getUserForAdmin());
     }
 
@@ -63,7 +58,7 @@ public class UserController {
         // AccessDeniedException: 생성 권한이 없거나 타 회사 사원 생성 시도 시 403 Forbidden 반환
         // DuplicateKeyException: 동일한 회사번호,사원번호 계정이 이미 존재할 경우 409 Conflict 반환
         // IllegalArgumentException: 잘못된 요청 인자일 경우 400 Bad Request 반환
-        // NullPointerException: 인증정보가 유효하지 않을 경우 401 Unauthorized 반환
+        // AuthenticationCredentialsNotFoundException: 인증정보가 유효하지 않을 경우 401 Unauthorized 반환
         userService.createUser(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body("계정이 성공적으로 생성 완료.");
     }
@@ -72,15 +67,17 @@ public class UserController {
      * 사용자를 삭제합니다.
      *
      * @param targetEmployeeId 삭제 대상 사용자 ID
+     * @param companyId        대상 회사 번호. 생략 시 요청자 회사이며, 지정은 최고관리자만 가능합니다.
      * @return 응답 메시지.
      */
     @DeleteMapping("/{target}")
-    public ResponseEntity<String> deleteUser(@PathVariable("target") Long targetEmployeeId) {
+    public ResponseEntity<String> deleteUser(@PathVariable("target") Long targetEmployeeId,
+                                             @RequestParam(required = false) Long companyId) {
         // GlobalExceptionHandler파일안에 예외처리 권한 넘김
         // - AccessDeniedException: 삭제 권한이 없는 경우 403 Forbidden 반환
         // - UsernameNotFoundException: 삭제 대상 사용자를 찾을 수 없는 경우 404 Not Found 반환
-        // - NullPointerException: 인증이 유효하지 않은 경우 401 Unauthorized 반환
-        userService.deleteUser(targetEmployeeId);
+        // - AuthenticationCredentialsNotFoundException: 인증이 유효하지 않은 경우 401 Unauthorized 반환
+        userService.deleteUser(targetEmployeeId, companyId);
         return ResponseEntity.ok("회원이 탈퇴되었습니다.");
     }
 
@@ -88,18 +85,20 @@ public class UserController {
      * 사용자의 등급을 수정합니다.
      *
      * @param targetEmployeeId 수정 대상 사용자 ID
+     * @param companyId        대상 회사 번호. 생략 시 요청자의 회사이며, 최고 관리자만 사용 가능합니다.
      * @param newRoleCode      새로운 등급 코드
      * @return 응답 메시지.
      */
     @PatchMapping("/{target}")
     public ResponseEntity<String> updateRole(@PathVariable("target") Long targetEmployeeId,
+                                             @RequestParam(required = false) Long companyId,
                                              @RequestBody String newRoleCode) {
         // GlobalExceptionHandler파일안에 예외처리 권한 넘김
         // AccessDeniedException: 등급 수정 권한이 없는 경우 403 Forbidden 반환
         // UsernameNotFoundException: 수정 대상 사용자를 찾을 수 없는 경우 404 Not Found 반환
         // IllegalArgumentException: 요청한 등급 코드가 유효하지 않은 경우 400 Bad Request 반환
-        // NullPointerException: 인증이 유효하지 않은 경우 401 Unauthorized 반환
-        userService.updateRole(targetEmployeeId, newRoleCode);
+        // AuthenticationCredentialsNotFoundException: 인증이 유효하지 않은 경우 401 Unauthorized 반환
+        userService.updateRole(targetEmployeeId, companyId, newRoleCode);
         return ResponseEntity.ok("권한이 수정되었습니다.");
     }
 }

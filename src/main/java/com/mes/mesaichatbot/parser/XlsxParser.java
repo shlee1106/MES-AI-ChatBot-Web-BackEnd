@@ -4,6 +4,7 @@ import com.mes.mesaichatbot.dto.UploadDataDetailsDto;
 import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -41,17 +42,14 @@ public class XlsxParser implements DocumentParser {
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
-                for (int j = 0; j < sheet.getPhysicalNumberOfRows(); j++) {
-                    if (sheet.getRow(j) == null) {
-                        continue;
-                    }
-
+                // 중간에 빈 행이 있어도 뒤쪽 행이 누락되지 않도록 시트의 행을 직접 순회
+                for (Row row : sheet) {
                     List<String> cells = new ArrayList<>();
-                    for (Cell cell : sheet.getRow(j)) {
+                    for (Cell cell : row) {
                         cells.add(dataFormatter.formatCellValue(cell));
                     }
 
-                    data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, j + 1, objectMapper.writeValueAsString(cells), createdAt));
+                    data.add(new UploadDataDetailsDto(i + 1, companyId, fileId, row.getRowNum() + 1, objectMapper.writeValueAsString(cells), createdAt));
                 }
             }
 

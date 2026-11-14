@@ -26,6 +26,7 @@ public class PasswordResetService {
     private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
     private final CompanyRepository companyRepository;
+    private final RefreshService refreshService;
 
     @Value("${app.frontend-hostname}")
     private String hostname;
@@ -40,7 +41,7 @@ public class PasswordResetService {
 
         // UUID 토큰 생성 및 Redis에 저장 (5분 뒤 자동 삭제됨)
         String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId().getCompanyId(),
+        PasswordResetToken resetToken = new PasswordResetToken(token, user.getCompanyId(),
                                                                user.getEmployeeId());
         tokenRepository.save(resetToken);
 
@@ -76,6 +77,9 @@ public class PasswordResetService {
 
         // 비밀번호 암호화 후 업데이트
         user.setPassword(passwordEncoder.encode(newPassword));
+
+        // 비밀번호가 바뀌었으므로 기존에 발급된 Refresh Token을 모두 폐기
+        refreshService.revokeAllTokens(String.valueOf(resetToken.getCompanyId()), String.valueOf(resetToken.getEmployeeId()));
 
         // 사용이 완료된 임시 토큰은 Redis에서 즉시 파기하여 재사용 방지
         tokenRepository.delete(resetToken);

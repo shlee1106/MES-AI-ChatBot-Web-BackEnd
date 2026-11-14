@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -184,12 +185,10 @@ public class GlobalExceptionHandler {
     /**
      * 유효한 인증 세션 정보가 없을 때 발생하는 예외 처리 (401 Unauthorized)
      *
-     * @param e 발생한 인증 관련 예외 ({@link NullPointerException}, {@link AuthenticationCredentialsNotFoundException})
      * @return 인증 실패 안내 메시지
      */
-    @ExceptionHandler({NullPointerException.class, AuthenticationCredentialsNotFoundException.class})
-    public ResponseEntity<Map<String, String>> handleAuthenticationException(Exception e) {
-        log.warn("Null Found: {}", e.getMessage(), e);
+    @ExceptionHandler({AuthenticationCredentialsNotFoundException.class, BadCredentialsException.class})
+    public ResponseEntity<Map<String, String>> handleAuthenticationException() {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "세션이 유효하지 않습니다."));

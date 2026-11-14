@@ -13,7 +13,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,9 +43,9 @@ class FileControllerTest {
         when(fileService.getFiles(any())).thenReturn(java.util.List.of());
         mvc.perform(get("/api/v1/files"))
            .andExpect(status().isOk()).andExpect(content().json("[]"));
-        when(userService.getCurrentUserEntity()).thenThrow(new UsernameNotFoundException("missing"));
+        when(userService.getCurrentUserEntity()).thenThrow(new BadCredentialsException("missing"));
         mvc.perform(get("/api/v1/files"))
-           .andExpect(status().isUnauthorized()).andExpect(content().string(""));
+           .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -84,11 +84,10 @@ class FileControllerTest {
            .andExpect(status().isBadRequest())
            .andExpect(jsonPath("$[0].fileData").value((Object) null))
            .andExpect(jsonPath("$[0].parsedData").value((Object) null));
-        doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(), any());
+        doThrow(new BadCredentialsException("missing")).when(fileService).uploadFile(any(), any(), any());
         mvc.perform(multipart("/api/v1/files").file(file).param("shared", "false").with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(jsonPath("$[0].fileData").value((Object) null))
-           .andExpect(jsonPath("$[0].parsedData").value((Object) null));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test
@@ -170,14 +169,15 @@ class FileControllerTest {
         mvc.perform(multipart("/api/v1/files").file(file).with(csrf()))
            .andExpect(status().isForbidden())
            .andExpect(jsonPath("$[0].message").value("forbidden"));
-        doThrow(new NullPointerException("null")).when(fileService).uploadFile(any(), any(), anyBoolean());
+        doThrow(new AuthenticationCredentialsNotFoundException("null")).when(fileService)
+                                                                       .uploadFile(any(), any(), anyBoolean());
         mvc.perform(multipart("/api/v1/files").file(file).with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(jsonPath("$[0].message").value("인증 정보가 올바르지 않습니다."));
-        doThrow(new UsernameNotFoundException("missing")).when(fileService).uploadFile(any(), any(), anyBoolean());
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
+        doThrow(new BadCredentialsException("missing")).when(fileService).uploadFile(any(), any(), anyBoolean());
         mvc.perform(multipart("/api/v1/files").file(file).with(csrf()))
            .andExpect(status().isUnauthorized())
-           .andExpect(jsonPath("$[0].message").value("인증 정보가 올바르지 않습니다."));
+           .andExpect(jsonPath("$.error").value("세션이 유효하지 않습니다."));
     }
 
     @Test

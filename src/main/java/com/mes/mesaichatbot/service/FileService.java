@@ -70,7 +70,7 @@ public class FileService {
                                                Long employeeId,
                                                boolean allCompany,
                                                Long requestedCompanyId) {
-        Company company = currentUser.getCompanyId();
+        Company company = currentUser.getCompany();
         boolean isAdmin = currentUser.getRoleCode() != UserRole.ROLE_USER;
 
         if (currentUser.getRoleCode() == UserRole.ROLE_MASTER && requestedCompanyId != null) {
@@ -102,7 +102,7 @@ public class FileService {
      */
     @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, LocalDateTime requestedAt, Boolean shared)
-            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
+            throws IOException, NotOfficeXmlFileException, UsernameNotFoundException, UnsupportedOperationException {
         return uploadFile(file, requestedAt, Boolean.TRUE.equals(shared), null, null);
     }
 
@@ -122,12 +122,12 @@ public class FileService {
                                             boolean shared,
                                             Long targetEmployeeId,
                                             Long targetCompanyId)
-            throws IOException, NotOfficeXmlFileException, NullPointerException, UsernameNotFoundException, UnsupportedOperationException {
+            throws IOException, NotOfficeXmlFileException, UsernameNotFoundException, UnsupportedOperationException {
         // UUID 발급.
         UUID fileId = UUID.randomUUID();
         // 요청자 정보를 UserService에서 가져옴
         UserMember requester = userService.getCurrentUserEntity();
-        Company company = requester.getCompanyId();
+        Company company = requester.getCompany();
 
         if (requester.getRoleCode() == UserRole.ROLE_MASTER && targetCompanyId != null) {
             Company foundCompany = companyRepository.findByCompanyId(targetCompanyId);
@@ -149,7 +149,7 @@ public class FileService {
             }
             owner = userMemberRepository.findByCompanyIdAndEmployeeId(company, targetEmployeeId)
                                         .orElseThrow(() -> new UsernameNotFoundException("대상 사원 정보를 찾을 수 없습니다."));
-        } else if (shared && !company.getCompanyId().equals(requester.getCompanyId().getCompanyId())) {
+        } else if (shared && !company.equals(requester.getCompany())) {
             List<UserMember> companyMembers = userMemberRepository.findByCompanyId(company);
             if (!companyMembers.isEmpty()) {
                 owner = companyMembers.getFirst();
@@ -216,22 +216,24 @@ public class FileService {
             throw new IllegalStateException("파일 등록자 정보를 찾을 수 없습니다.");
         }
 
-        Long uploaderEmployeeId = uploader.getEmployeeId();
         UserRole uploaderRole = uploader.getRoleCode();
 
-        // 삭제 요청자의 사원번호 추출 및 유저 정보 조회
+        // 삭제 요청자 유저 정보 조회
         UserMember requester = userService.getCurrentUserEntity();
         UserRole requesterRole = requester.getRoleCode();
 
-        // USER는 본인이 등록한 파일만 삭제 가능
+        // USER는 본인이 등록한 파일만 삭제 가능 (회사와 사원번호를 모두 포함한 복합키로 비교)
         if (requesterRole == UserRole.ROLE_USER) {
-            if (!requester.getEmployeeId().equals(uploaderEmployeeId)) {
+            if (!requester.equals(uploader)) {
                 throw new AccessDeniedException("일반 사원은 본인이 업로드한 파일만 삭제할 수 있습니다.");
             }
         }
 
-        // MANAGER는 MASTER의 파일 삭제 불가
+        // MANAGER는 같은 회사의 파일만 삭제 가능하며, MASTER의 파일 삭제 불가
         if (requesterRole == UserRole.ROLE_MANAGER) {
+            if (!requester.getCompany().equals(uploader.getCompany())) {
+                throw new AccessDeniedException("타 회사의 파일은 삭제할 수 없습니다.");
+            }
             if (uploaderRole == UserRole.ROLE_MASTER) {
                 throw new AccessDeniedException("중간 관리자는 최고 관리자의 파일을 삭제할 수 없습니다.");
             }

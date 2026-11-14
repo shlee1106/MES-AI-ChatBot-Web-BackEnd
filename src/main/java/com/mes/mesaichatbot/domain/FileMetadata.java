@@ -42,6 +42,6 @@ public class FileMetadata {
     private LocalDateTime uploadedAt;
 
     public Company getCompanyId() {
-        return employeeId.getCompanyId();
+        return employeeId.getCompany();
     }
 }

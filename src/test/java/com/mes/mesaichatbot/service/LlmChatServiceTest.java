@@ -14,9 +14,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -51,26 +51,32 @@ class LlmChatServiceTest {
     /**
      * 대화 내역 조회 서비스 mock.
      */
+    @Mock
     private LlmChatHistoryService chatHistoryService;
     /**
      * ChatClient 빌더 제공자 mock.
      */
+    @Mock
     private ObjectProvider<ChatClient.Builder> chatClientProvider;
     /**
      * VectorStore 제공자 mock.
      */
+    @Mock
     private ObjectProvider<VectorStore> vectorStoreProvider;
     /**
      * 대화 세션 저장소 mock.
      */
+    @Mock
     private ChatSessionRepository chatSessionRepository;
     /**
      * 대화 내역 저장소 mock.
      */
+    @Mock
     private ChatHistoryRepository chatHistoryRepository;
     /**
      * 접근 가능한 파일 조회 저장소 mock.
      */
+    @Mock
     private FileMetadataRepository fileMetadataRepository;
     /**
      * 테스트 대상 서비스.
@@ -92,13 +98,6 @@ class LlmChatServiceTest {
 
     @BeforeEach
     void setUp() {
-        chatHistoryService = mock(LlmChatHistoryService.class);
-        chatClientProvider = mock(ObjectProvider.class);
-        vectorStoreProvider = mock(ObjectProvider.class);
-        chatSessionRepository = mock(ChatSessionRepository.class);
-        chatHistoryRepository = mock(ChatHistoryRepository.class);
-        fileMetadataRepository = mock(FileMetadataRepository.class);
-
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         chatClient = mock(ChatClient.class, Answers.RETURNS_DEEP_STUBS);
 
@@ -122,17 +121,15 @@ class LlmChatServiceTest {
 
     /**
      * LLM 답변 응답 스텁을 설정합니다.
-     *
-     * @param answer LLM 답변
      */
-    private void stubLlmAnswer(String answer) {
-        when(chatClient.prompt().messages(anyList()).user(anyString()).call().content()).thenReturn(answer);
+    private void stubLlmAnswer() {
+        when(chatClient.prompt().messages(anyList()).user(anyString()).call().content()).thenReturn("답변");
     }
 
     @Test
     @DisplayName("대화 내역이 비어 있는 새 대화방의 첫 질문도 성공하는가?")
     void askToLlm_firstQuestionInEmptySession_success() {
-        stubLlmAnswer("답변");
+        stubLlmAnswer();
 
         ChatHistory result = llmChatService.askToLlm("s-1", member, LocalDateTime.now(),
                                                      new UserQuestionDto("첫 질문"));
@@ -159,7 +156,7 @@ class LlmChatServiceTest {
     @Test
     @DisplayName("질문이 정확히 1000자이면 성공하는가?")
     void askToLlm_questionAtMaxLength_success() {
-        stubLlmAnswer("답변");
+        stubLlmAnswer();
         String question = "가".repeat(MAX_QUESTION_LENGTH);
 
         ChatHistory result = llmChatService.askToLlm("s-1", member, LocalDateTime.now(),

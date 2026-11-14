@@ -46,14 +46,18 @@ public class CsvParser implements DocumentParser {
         // CSV 데이터를 InputStream에서 읽기
         try (CSVReader reader = new CSVReader(new InputStreamReader(inputStream))) {
             List<String[]> rows = reader.readAll();
+            if (rows.isEmpty()) {
+                throw new IOException("CSV 파일이 비어 있습니다.");
+            }
             String[] head = rows.getFirst();
 
             // 각 행 순회
             for (int i = 1; i < rows.size(); i++) {
+                String[] row = rows.get(i);
                 List<String> everyRows = new ArrayList<>();
-                // 각 열 매핑
+                // 각 열 매핑 (헤더보다 열이 적은 행은 모자란 칸을 빈 문자열로 처리)
                 for (int j = 0; j < head.length; j++) {
-                    everyRows.add("%s: %s\n".formatted(head[j], rows.get(i)[j]));
+                    everyRows.add("%s: %s\n".formatted(head[j], j < row.length ? row[j] : ""));
                 }
                 // 데이터 추가
                 data.add(new UploadDataDetailsDto(1, companyId, fileId, i + 1, mapper.writeValueAsString(everyRows), createdAt));

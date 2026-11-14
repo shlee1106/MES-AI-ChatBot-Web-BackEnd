@@ -25,24 +25,23 @@ public interface UserMemberRepository extends JpaRepository<UserMember, UserMemb
     /**
      * 회사 엔티티와 사원번호(복합키 내부 필드)로 사원 정보를 조회합니다.
      */
-    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId AND u.id.employeeId = :employeeId")
+    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId AND u.id.employeeId = :employeeId AND u.deleted = false")
     Optional<UserMember> findByCompanyIdAndEmployeeId(@Param("companyId") Company companyId, @Param("employeeId") Long employeeId);
 
     /**
      * 회사 엔티티, 사원번호, 이메일이 모두 일치하는 사원 정보를 조회합니다.
      */
-    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId AND u.id.employeeId = :employeeId AND u.companyEmail = :companyEmail")
+    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId AND u.id.employeeId = :employeeId AND u.companyEmail = :companyEmail AND u.deleted = false")
     Optional<UserMember> findByCompanyIdAndEmployeeIdAndCompanyEmail(@Param("companyId") Company companyId, @Param("employeeId") Long employeeId, @Param("companyEmail") String companyEmail);
 
     /**
      * 특정 회사에 소속된 모든 사원 목록을 조회합니다.
      */
-    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId")
+    @Query("SELECT u FROM UserMember u WHERE u.company = :companyId AND u.deleted = false")
     List<UserMember> findByCompanyId(@Param("companyId") Company companyId);
 
     /**
-     * 사원번호(Long)만으로 사원을 조회하는 호환 메서드.
+     * 탈퇴하지 않은 모든 사원 목록을 조회합니다.
      */
-    @Query("SELECT u FROM UserMember u WHERE u.id.employeeId = :employeeId")
-    Optional<UserMember> findById(@Param("employeeId") Long employeeId);
+    List<UserMember> findAllByDeletedFalse();
 }

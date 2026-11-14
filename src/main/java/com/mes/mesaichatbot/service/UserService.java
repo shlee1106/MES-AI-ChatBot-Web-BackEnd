@@ -48,19 +48,19 @@ public class UserService implements UserDetailsService {
      */
     @Transactional
     public void createUser(JoinRequestDTO dto) {
-        // 현재 요청을 보낸 사람의 권한 확인
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String creatorRole = Objects.requireNonNull(auth).getAuthorities().iterator().next().getAuthority();
-        Long creatorCompanyId = Long.parseLong(auth.getName().split("_")[0]);
+        // 현재 요청을 보낸 사람의 권한을 토큰이 아닌 DB에서 확인
+        UserMember creator = getCurrentUserEntity();
+        UserRole creatorRole = creator.getRoleCode();
+        Long creatorCompanyId = creator.getCompanyId();
         Company company = companyRepository.findByCompanyId(dto.companyId());
 
         // 일반 사원은 계정생성 불가 (권한 부족이므로 403 AccessDeniedException 발생)
-        if (Objects.requireNonNull(creatorRole).equals("ROLE_USER")) {
+        if (creatorRole == UserRole.ROLE_USER) {
             throw new AccessDeniedException("일반 사원은 계정을 생성할 권한이 없습니다.");
         }
 
         // 중간관리자는 최고관리자, 자신과 같은 중간관리자 생성 불가 및 타 회사 사원 등록 불가 (403)
-        if (creatorRole.equals("ROLE_MANAGER")) {
+        if (creatorRole == UserRole.ROLE_MANAGER) {
             if (dto.role() == UserRole.ROLE_MASTER || dto.role() == UserRole.ROLE_MANAGER) {
                 throw new AccessDeniedException("중간관리자는 하위관리자 계정만 생성할 수 있습니다.");
             }
@@ -120,6 +120,24 @@ public class UserService implements UserDetailsService {
                    .password(entity.getPassword()) // [가장 중요] Security가 대조해 볼 DB 속 진짜 암호화된 비밀번호
                    .roles(role) //.roles() 메서드 내부적으로 다시 ROLE_을 붙여줘 순수 이름만 넘김.
                    .build();
+    }
+
+    /**
+     * "회사번호_사원번호" 형태의 식별자로 특정 사원 엔티티를 조회합니다.
+     * 탈퇴(deleted = true)한 사원은 조회되지 않습니다.
+     *
+     * @param subject "회사번호_사원번호" 형태의 식별자 (예: "1_2000")
+     * @return 조회된 {@link UserMember} 객체.
+     * @throws UsernameNotFoundException 사원 정보가 없거나 탈퇴한 사원인 경우 발생합니다.
+     */
+    @Transactional(readOnly = true)
+    public UserMember getUserEntity(String subject) throws UsernameNotFoundException {
+        String[] parts = subject.split("_");
+        Long companyId = Long.parseLong(parts[0]);
+        Long employeeId = Long.parseLong(parts[1]);
+
+        return userRepository.findByCompanyIdAndEmployeeId(companyRepository.findByCompanyId(companyId), employeeId)
+                             .orElseThrow(() -> new UsernameNotFoundException("사원 정보를 찾을 수 없습니다."));
     }
 
     /**
@@ -192,7 +210,7 @@ public class UserService implements UserDetailsService {
 
         if ("ROLE_MASTER".equals(member.getRoleCode().name())) {
             // 최고 관리자의 경우 모든 사용자 삽입
-            users = userRepository.findAll();
+            users = userRepository.findAllByDeletedFalse();
         } else {
             // 중간 관리자의 경우 본인 회사에 속한 사용자만 삽입 (단, 최고관리자 ROLE_MASTER는 노출 제외)
             Company myCompany = companyRepository.findByCompanyId(member.getCompanyId());
@@ -210,22 +228,24 @@ public class UserService implements UserDetailsService {
      * 사용자를 삭제합니다.
      *
      * @param targetEmployeeId 삭제할 대상의 사원번호.
+     * @param companyId        삭제할 대상의 회사번호. 생략(null)하면 요청자의 회사를 사용하며, 최고관리자만 지정할 수 있습니다.
      * @throws AccessDeniedException                      현재 사용자에게 대상의 삭제 권한이 없는 경우 발생합니다.
      * @throws UsernameNotFoundException                  대상을 잘못 지정한 경우 발생합니다.
      * @throws AuthenticationCredentialsNotFoundException 세션이 유효하지 않은 경우 발생합니다.
      */
     @Transactional
-    public void deleteUser(
-            Long targetEmployeeId) throws AccessDeniedException, UsernameNotFoundException, AuthenticationCredentialsNotFoundException {
+    public void deleteUser(Long targetEmployeeId, Long companyId) throws AccessDeniedException, UsernameNotFoundException, AuthenticationCredentialsNotFoundException {
         UserMember currentUser = getCurrentUserEntity();
-        UserMember targetUser = userRepository.findById(targetEmployeeId)
-                                              .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
 
-        if ("ROLE_USER".equals(currentUser.getRoleCode().toString())) {
+        if (currentUser.getRoleCode() == UserRole.ROLE_USER) {
             throw new AccessDeniedException("하위관리자는 탈퇴 권한이 없습니다.");
         }
 
-        if ("ROLE_MANAGER".equals(currentUser.getRoleCode().toString())) {
+        Company targetCompany = resolveTargetCompany(currentUser, companyId);
+        UserMember targetUser = userRepository.findByCompanyIdAndEmployeeId(targetCompany, targetEmployeeId)
+                                              .orElseThrow(() -> new UsernameNotFoundException("유저가 존재하지 않습니다."));
+
+        if (currentUser.getRoleCode() == UserRole.ROLE_MANAGER) {
             if (!currentUser.getCompany().equals(targetUser.getCompany())) {
                 throw new AccessDeniedException("타 회사회원은 탈퇴시킬 수 없습니다.");
             }
@@ -244,6 +264,7 @@ public class UserService implements UserDetailsService {
      * 사용자의 등급을 수정합니다.
      *
      * @param targetEmployeeId 수정할 대상.
+     * @param companyId        대상의 회사번호. 생략(null)하면 요청자의 회사를 사용하며, 최고관리자만 지정할 수 있습니다.
      * @param newRoleCode      새로 부여할 등급.
      * @throws AccessDeniedException                      현재 사용자에게 수정 권한이 없는 경우 발생합니다.
      * @throws UsernameNotFoundException                  대상이 유효하지 않은 경우 발생합니다.
@@ -251,18 +272,45 @@ public class UserService implements UserDetailsService {
      * @throws AuthenticationCredentialsNotFoundException 세션이 유효하지 않은 경우 발생합니다.
      */
     @Transactional
-    public void updateRole(Long targetEmployeeId,
+    public void updateRole(Long targetEmployeeId, Long companyId,
                            String newRoleCode) throws AccessDeniedException, IllegalArgumentException,
             UsernameNotFoundException, AuthenticationCredentialsNotFoundException {
         UserMember member = getCurrentUserEntity();
 
-        if (!"ROLE_MASTER".equals(member.getRoleCode().name())) {
+        if (member.getRoleCode() != UserRole.ROLE_MASTER) {
             throw new AccessDeniedException("권한 승격은 및 강등 진행은 최고관리자만 가능합니다.");
         }
 
-        UserMember targetUser = userRepository.findById(targetEmployeeId)
+        Company targetCompany = resolveTargetCompany(member, companyId);
+        UserMember targetUser = userRepository.findByCompanyIdAndEmployeeId(targetCompany, targetEmployeeId)
                                               .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 회원입니다."));
 
         targetUser.setRoleCode(UserRole.valueOf(newRoleCode));
+    }
+
+    /**
+     * 요청 대상이 속한 회사를 결정합니다.
+     * 회사번호가 생략되면 요청자의 회사를 사용하고, 회사번호를 지정하는 것은 최고관리자(ROLE_MASTER)만 가능합니다.
+     *
+     * @param currentUser 요청을 보낸 현재 사용자
+     * @param companyId   지정된 회사번호 (null이면 요청자의 회사)
+     * @return 대상이 속한 {@link Company}
+     * @throws AccessDeniedException     최고관리자가 아닌데 회사번호를 지정한 경우 발생합니다. (자신의 회사번호를 지정해도 거부됩니다.)
+     * @throws UsernameNotFoundException 지정한 회사번호에 해당하는 회사가 없는 경우 발생합니다.
+     */
+    private Company resolveTargetCompany(UserMember currentUser, Long companyId) throws AccessDeniedException, UsernameNotFoundException {
+        if (companyId == null) {
+            return currentUser.getCompany();
+        }
+
+        if (currentUser.getRoleCode() != UserRole.ROLE_MASTER) {
+            throw new AccessDeniedException("회사 지정은 최고관리자만 가능합니다.");
+        }
+
+        Company company = companyRepository.findByCompanyId(companyId);
+        if (company == null) {
+            throw new UsernameNotFoundException("유저가 존재하지 않습니다.");
+        }
+        return company;
     }
 }

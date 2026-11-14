@@ -134,7 +134,7 @@ public class LlmChatService {
         List<Message> messages = chatHistoryService.getMessages(session, member);
 
         // 대화방을 찾을 수 없는 경우 Not Found
-        if (messages == null || messages.isEmpty()) {
+        if (messages == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
